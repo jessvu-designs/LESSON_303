@@ -1,4 +1,5 @@
-import { Redirect, Stack, useSegments } from 'expo-router';
+import { useEffect } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -28,11 +29,16 @@ function MaybeStripeProvider({ children }: { children: React.ReactNode }) {
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { loading, token } = useAuth();
   const segments = useSegments();
+  const router = useRouter();
   const onLogin = segments[0] === 'login';
 
+  useEffect(() => {
+    if (loading) return;
+    if (!token && !onLogin) router.replace('/login');
+    else if (token && onLogin) router.replace('/');
+  }, [loading, token, onLogin, router]);
+
   if (loading) return <Loading />;
-  if (!token && !onLogin) return <Redirect href="/login" />;
-  if (token && onLogin) return <Redirect href="/" />;
   return <>{children}</>;
 }
 
