@@ -1,6 +1,27 @@
-# Universal Parking — Monorepo
+# PARKER — Monorepo
 
 A mobile-first universal street parking app, scaffolded per [BRIEF.md](BRIEF.md).
+
+## Requirements Coverage (MVP)
+
+This repo currently covers the core MVP requirements from the brief:
+
+- Detect/confirm parking location with map and manual fallback behavior
+- Identify/select zone, with nearby-zone map and list modes
+- Show clear pricing and estimated totals before confirmation
+- Start a parking session with explicit confirmation state
+- Display active session with prominent countdown and expiration time
+- Extend parking with one-tap options and cost preview
+- Send 15/5/0 minute reminders (local + server push fanout)
+- Save/manage payment methods and vehicles
+- View parking history/receipts
+
+Non-functional requirements actively implemented:
+
+- High-contrast visual system with WCAG-oriented checks
+- Large tap targets and mobile-first interaction patterns
+- Clear urgency states for expiring/expired sessions
+- Connector architecture for city/vendor expansion
 
 The mobile app talks to the NestJS API over HTTP using **TanStack Query** for server state. The API uses a **connector pattern** so each city/vendor can be plugged in behind a common interface (only a mock connector is registered today).
 
@@ -56,10 +77,10 @@ EXPO_PUBLIC_API_URL=http://192.168.1.10:3000 pnpm mobile
 ## Mobile screens
 
 - **Login / Sign up** — email + password against `/auth/*`
-- **Home** — detects a zone, shows nearby zones, surfaces active session, sign out
-- **Confirm Parking** — duration choice, transparent live pricing, max-time guard
-- **Active Session** — large countdown, location, plate, paid amount, extend/end
-- **Extend Time** — 1-tap +15/+30/+60 with cost preview and "not allowed" fallback
+- **Home** — location context first, nearby zone map/list, active parking card, account drawer
+- **Confirm Parking Zone** — duration choice, transparent live pricing, max-time guard
+- **Active Parking** — large countdown, location, plate, paid amount, extend/end
+- **Extend Parking** — 1-tap +15/+30/+60 with cost preview and "not allowed" fallback
 - **History** — past sessions with totals
 
 State and data fetching live in [apps/mobile/src/hooks/parkingHooks.ts](apps/mobile/src/hooks/parkingHooks.ts), backed by [apps/mobile/src/services/parkingApi.ts](apps/mobile/src/services/parkingApi.ts) and a tiny [apiClient](apps/mobile/src/services/apiClient.ts).
@@ -95,9 +116,9 @@ Permission is requested on the first successful start. Notifications are not ava
 [expo-location](apps/mobile/src/services/location.ts) requests foreground location permission on demand and feeds two things:
 
 1. **Closest-zone sort** — the Home screen reorders zones by Haversine distance from the device and shows "… m / km away" labels.
-2. **Zone map preview** — the Confirm screen renders a small [react-native-maps](apps/mobile/src/components/ZoneMap.tsx) view with a pin on the zone and a second pin for the user so people can visually verify they're parking in the right place before paying.
+2. **Zone map preview** — the Confirm screen renders a [react-native-maps](apps/mobile/src/components/ZoneMap.tsx) view with a pin on the zone and a second pin for the user so people can visually verify they're parking in the right place before paying.
 
-Zone coordinates live in [the Prisma schema](apps/api/prisma/schema.prisma) (`latitude` / `longitude`) and are surfaced as `zone.geo: { lat, lng }` via the [shared types](packages/shared-types/src/index.ts). The map component degrades gracefully (renders nothing) if `react-native-maps` isn't linked or the zone has no coordinates.
+Zone coordinates live in [the Prisma schema](apps/api/prisma/schema.prisma) (`latitude` / `longitude`) and are surfaced as `zone.geo: { lat, lng }` via the [shared types](packages/shared-types/src/index.ts). On web, the map components render an OSM-tile-backed fallback with zone/user overlays when native maps are unavailable.
 
 ### Confirming the exact spot
 
@@ -190,6 +211,23 @@ pnpm --filter @parking/api db:reset    # wipes DB + reseeds
 ## Shared types
 
 Domain models (User, Vehicle, ParkingZone, ParkingSession, Receipt, …) live in [packages/shared-types/src/index.ts](packages/shared-types/src/index.ts) and are imported as `@parking/shared-types` from both apps.
+
+## UI system and accessibility
+
+The mobile UI follows an urban, signage-inspired visual system intended for outdoor readability and fast scanning under time pressure.
+
+- Palette: asphalt/concrete base with curb yellow, meter green, alert red/orange, and system blue state colors
+- Information hierarchy: map-first context, practical panel cards, strong CTA emphasis
+- State semantics: active/expiring/expired states use explicit text plus color cues
+- Contrast safety: token-level contrast checks are automated
+
+Run contrast checks:
+
+```bash
+pnpm --dir apps/mobile contrast:check
+```
+
+This script validates key token pairings and fails if ratios drop below configured thresholds.
 
 ## Next sprints (from the brief)
 

@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "contrast:check": "node ./scripts/check-contrast.cjs",
     "lint": "echo \"(add eslint later)\""
   },
   "dependencies": {

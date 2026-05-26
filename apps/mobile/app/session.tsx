@@ -31,8 +31,8 @@ export default function ActiveSession() {
   if (!session) {
     return (
       <View style={styles.container}>
-        <Text style={typography.h2}>No active session.</Text>
-        <Button label="Find parking" onPress={() => router.replace('/')} />
+        <Text style={typography.h2}>No active parking session.</Text>
+        <Button label="Find parking zone" onPress={() => router.replace('/')} />
       </View>
     );
   }
@@ -47,9 +47,15 @@ export default function ActiveSession() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Card style={{ alignItems: 'center', gap: spacing.sm }}>
+      <Card
+        style={{
+          alignItems: 'center',
+          gap: spacing.sm,
+          borderTopColor: expired ? colors.danger : expiringSoon ? colors.warning : colors.success,
+        }}
+      >
         <Text style={typography.label}>
-          {expired ? 'Expired' : expiringSoon ? 'Expiring soon' : 'Time remaining'}
+          {expired ? 'Session expired' : expiringSoon ? 'Expiring soon' : 'Time remaining'}
         </Text>
         <Text
           style={[
@@ -60,11 +66,11 @@ export default function ActiveSession() {
         >
           {formatCountdown(remaining)}
         </Text>
-        <Text style={typography.bodyMuted}>Ends at {formatTime(session.expiresAt)}</Text>
+        <Text style={typography.bodyMuted}>Parking confirmed. Ends at {formatTime(session.expiresAt)}.</Text>
       </Card>
 
       <Card style={{ gap: spacing.sm }}>
-        <Text style={typography.label}>You're parked at</Text>
+        <Text style={typography.label}>Current zone</Text>
         <Text style={typography.h2}>{zone?.displayName ?? '—'}</Text>
         {zone?.address ? <Text style={typography.bodyMuted}>{zone.address}</Text> : null}
         <Text style={typography.bodyMuted}>Zone {zone?.code ?? '—'}</Text>
@@ -81,11 +87,11 @@ export default function ActiveSession() {
         label={extendLabel}
         variant={shouldShowExtendParking ? 'danger' : 'primary'}
         onPress={() => router.push('/extend')}
-        accessibilityHint="Add more minutes to your parking session"
+        accessibilityHint="Add more minutes to this parking session"
       />
       <Button
         label={endSession.isPending ? 'Ending…' : 'End session'}
-        variant="danger"
+        variant="secondary"
         disabled={endSession.isPending}
         onPress={() =>
           Alert.alert('End session?', 'Your time will stop and a receipt will be saved.', [

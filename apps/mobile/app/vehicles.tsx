@@ -44,7 +44,7 @@ export default function VehiclesScreen() {
 
   async function add() {
     if (!plate.trim()) {
-      Alert.alert('License plate required');
+      Alert.alert('Enter a license plate');
       return;
     }
     try {
@@ -63,9 +63,9 @@ export default function VehiclesScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={typography.h1}>Vehicles</Text>
+      <Text style={typography.h1}>Registered vehicles</Text>
       <Text style={[typography.bodyMuted, { marginBottom: spacing.md }]}>
-        Add every plate you might park under. The default is used when you start a session
+        Add each plate you may park under. The default vehicle is used when you start a session
         without picking one.
       </Text>
 
@@ -75,8 +75,8 @@ export default function VehiclesScreen() {
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
         ListEmptyComponent={
           <Card>
-            <Text style={typography.body}>No vehicles yet.</Text>
-            <Text style={typography.bodyMuted}>Add one below to start parking.</Text>
+            <Text style={typography.body}>No vehicles registered.</Text>
+            <Text style={typography.bodyMuted}>Register one below to start parking.</Text>
           </Card>
         }
         renderItem={({ item }) => (
@@ -88,7 +88,7 @@ export default function VehiclesScreen() {
                   {item.state ? ` (${item.state})` : ''}
                 </Text>
                 {item.isDefault ? (
-                  <Text style={[typography.bodyMuted, { color: colors.primary }]}>Default</Text>
+                  <Text style={[typography.bodyMuted, { color: colors.link }]}>Default</Text>
                 ) : null}
               </View>
               <Pressable
@@ -121,8 +121,8 @@ export default function VehiclesScreen() {
                 hitSlop={8}
                 accessibilityRole="button"
               >
-                <Text style={{ color: colors.primary, fontWeight: '600' }}>
-                  Set as default
+                <Text style={{ color: colors.link, fontWeight: '600' }}>
+                  Set as parking default
                 </Text>
               </Pressable>
             ) : null}
@@ -131,7 +131,7 @@ export default function VehiclesScreen() {
       />
 
       <View style={{ height: spacing.lg }} />
-      <Text style={typography.label}>Add a vehicle</Text>
+      <Text style={typography.label}>Register vehicle</Text>
       <View style={styles.form}>
         <TextInput
           value={plate}
@@ -166,7 +166,7 @@ export default function VehiclesScreen() {
       </View>
 
       <View style={{ height: spacing.md }} />
-      <Button label="Back" variant="secondary" onPress={() => router.back()} />
+      <Button label="Return" variant="secondary" onPress={() => router.back()} />
     </View>
   );
 }

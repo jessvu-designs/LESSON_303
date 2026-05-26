@@ -321,9 +321,9 @@ const styles = StyleSheet.create({
   wrap: {
     borderRadius: radii.md,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: '#0a1835',
+    borderWidth: 2,
+    borderColor: colors.curb,
+    backgroundColor: colors.surface,
   },
   fallbackMapBg: {
     flex: 1,
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fallbackLink: {
-    color: colors.primary,
+    color: colors.link,
     fontWeight: '600',
   },
 });

@@ -33,9 +33,9 @@ export default function Login() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={typography.h1}>Universal Parking</Text>
+        <Text style={typography.h1}>PARKER</Text>
         <Text style={[typography.bodyMuted, { marginBottom: spacing.lg }]}>
-          {mode === 'signin' ? 'Sign in to start parking.' : 'Create an account to start parking.'}
+          {mode === 'signin' ? 'Sign in to manage active parking and zone payments.' : 'Create an account to start parking with PARKER.'}
         </Text>
 
         <Card style={{ gap: spacing.md }}>
@@ -81,12 +81,12 @@ export default function Login() {
           </View>
 
           <Button
-            label={busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+            label={busy ? 'Please wait…' : mode === 'signin' ? 'Sign in to PARKER' : 'Create PARKER account'}
             onPress={submit}
             disabled={busy || !email || !password}
           />
           <Button
-            label={mode === 'signin' ? 'Create an account' : 'I already have an account'}
+            label={mode === 'signin' ? 'Create account' : 'I already have an account'}
             variant="secondary"
             onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
           />

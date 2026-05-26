@@ -34,7 +34,7 @@ export default function WalletScreen() {
   const stripeSdk = useStripePaymentSheet();
   const [busy, setBusy] = useState(false);
 
-  if (pmsQ.isLoading) return <Loading label="Loading wallet…" />;
+  if (pmsQ.isLoading) return <Loading label="Loading payment methods…" />;
   if (pmsQ.isError) {
     return <ErrorState message={(pmsQ.error as Error).message} onRetry={() => pmsQ.refetch()} />;
   }
@@ -52,7 +52,7 @@ export default function WalletScreen() {
         return;
       }
       const init = await stripeSdk.initPaymentSheet({
-        merchantDisplayName: 'Universal Parking',
+        merchantDisplayName: 'PARKER',
         customerId: intent.customerId,
         customerEphemeralKeySecret: intent.ephemeralKeySecret,
         setupIntentClientSecret: intent.clientSecret,
@@ -87,9 +87,9 @@ export default function WalletScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={typography.h1}>Wallet</Text>
+      <Text style={typography.h1}>Payment methods</Text>
       <Text style={[typography.bodyMuted, { marginBottom: spacing.md }]}>
-        Saved cards are used to authorize parking. We never charge more than the quoted total.
+        Saved cards are used to authorize parking. Charges never exceed the quoted total.
       </Text>
 
       <FlatList
@@ -98,8 +98,8 @@ export default function WalletScreen() {
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
         ListEmptyComponent={
           <Card>
-            <Text style={typography.body}>No saved cards yet.</Text>
-            <Text style={typography.bodyMuted}>Add one below to start parking.</Text>
+            <Text style={typography.body}>No payment methods on file.</Text>
+            <Text style={typography.bodyMuted}>Add a card below to start parking.</Text>
           </Card>
         }
         renderItem={({ item }) => (
@@ -158,7 +158,7 @@ export default function WalletScreen() {
       )}
 
       <View style={{ height: spacing.md }} />
-      <Button label="Back" variant="secondary" onPress={() => router.back()} />
+      <Button label="Return" variant="secondary" onPress={() => router.back()} />
 
       {STRIPE_MERCHANT_ID ? null : null /* referenced for tree-shaking */}
     </View>

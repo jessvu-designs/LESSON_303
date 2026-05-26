@@ -94,21 +94,28 @@ export default function Home() {
         <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
           <Animated.View style={[styles.menuCard, { transform: [{ translateX: drawerAnimRef }] }]}>
             <Pressable onPress={() => {}} style={{ flex: 1 }}>
-              <ScrollView contentContainerStyle={styles.menuScrollContent}>
-                <Text style={styles.menuEmail}>Signed in as {user?.email}</Text>
-                <Pressable onPress={() => { setMenuOpen(false); router.push('/wallet'); }} style={styles.menuItem}>
-                  <Text style={styles.menuItemText}>Wallet</Text>
-                </Pressable>
-                <Pressable onPress={() => { setMenuOpen(false); router.push('/vehicles'); }} style={styles.menuItem}>
-                  <Text style={styles.menuItemText}>Vehicles</Text>
-                </Pressable>
-                <Pressable onPress={() => { setMenuOpen(false); router.push('/history'); }} style={styles.menuItem}>
-                  <Text style={styles.menuItemText}>Receipts & history</Text>
-                </Pressable>
-                <Pressable onPress={() => { setMenuOpen(false); signOut(); }} style={styles.menuItem}>
-                  <Text style={[styles.menuItemText, { color: '#fca5a5' }]}>Sign out</Text>
-                </Pressable>
-              </ScrollView>
+              <View style={styles.menuContent}>
+                <View style={styles.menuTop}> 
+                  <Text style={styles.menuSectionTitle}>Account</Text>
+                  <View style={styles.menuSectionDivider} />
+                  <Pressable onPress={() => { setMenuOpen(false); router.push('/wallet'); }} style={styles.menuItem}>
+                    <Text style={styles.menuItemText}>Wallet</Text>
+                  </Pressable>
+                  <Pressable onPress={() => { setMenuOpen(false); router.push('/vehicles'); }} style={styles.menuItem}>
+                    <Text style={styles.menuItemText}>Vehicles</Text>
+                  </Pressable>
+                  <Pressable onPress={() => { setMenuOpen(false); router.push('/history'); }} style={styles.menuItem}>
+                    <Text style={styles.menuItemText}>Receipts & history</Text>
+                  </Pressable>
+                </View>
+                <View style={styles.menuFooter}>
+                  <View style={styles.menuDivider} />
+                  <Pressable onPress={() => { setMenuOpen(false); signOut(); }} style={styles.menuItem}>
+                    <Text style={[styles.menuItemText, styles.signOutText]}>Sign out</Text>
+                  </Pressable>
+                  <Text style={styles.menuEmail}>Signed in as {user?.email}</Text>
+                </View>
+              </View>
             </Pressable>
           </Animated.View>
         </Pressable>
@@ -116,40 +123,44 @@ export default function Home() {
       <ScrollView contentContainerStyle={styles.container}>
       <Text style={[typography.bodyMuted, { marginBottom: spacing.lg }]}>
         {locQ.data
-          ? 'We use your location to find the closest zone. You can always confirm before paying.'
-          : 'Enable location to auto-detect the closest zone, or pick one from the list.'}
+          ? 'Live location enabled. Review your zone, confirm, and start parking quickly.'
+          : 'Location off. Select a zone manually from the map or list.'}
       </Text>
 
       {active ? (
-        <Card style={{ gap: spacing.sm }}>
-          <Text style={typography.label}>Active session</Text>
+        <Card style={styles.activeCard}>
+          <Text style={styles.activePaid}>Paid {formatMoney(active.totalPaidCents, active.currency)}</Text>
+          <Text style={typography.label}>Parking active</Text>
           <Text style={[typography.display, { color: shouldShowExtendParking ? colors.danger : colors.text }]}>
             {formatCountdown(new Date(active.expiresAt).getTime() - now)}
           </Text>
           {activeZoneQ.data ? (
             <>
               <Text style={typography.h2}>{activeZoneQ.data.displayName}</Text>
-              {activeZoneQ.data.address ? <Text style={typography.bodyMuted}>{activeZoneQ.data.address}</Text> : null}
+              {activeZoneQ.data.address ? <Text style={typography.body}>{activeZoneQ.data.address}</Text> : null}
             </>
           ) : null}
-          <Text style={typography.bodyMuted}>
-            Paid {formatMoney(active.totalPaidCents, active.currency)}
-          </Text>
           <Button
             label={shouldShowExtendParking ? 'Extend Parking' : 'View session'}
             variant={shouldShowExtendParking ? 'danger' : 'primary'}
             onPress={() => router.push(shouldShowExtendParking ? '/extend' : '/session')}
           />
+          {shouldShowExtendParking ? (
+            <Button
+              label="View session"
+              variant="secondary"
+              onPress={() => router.push('/session')}
+            />
+          ) : null}
+          <Text style={[typography.bodyMuted, { textAlign: 'center', fontWeight: '400' }]}>Parking confirmed. Ends at {new Date(active.expiresAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.</Text>
         </Card>
       ) : detected ? (
         <Card style={{ gap: spacing.sm }}>
-          <Text style={typography.label}>
-            {locQ.data ? 'Closest zone' : 'Detected location'}
-          </Text>
+          <Text style={typography.label}>{locQ.data ? 'Closest parking zone' : 'Selected parking zone'}</Text>
           <Text style={typography.h2}>{detected.displayName}</Text>
           {detected.address ? <Text style={typography.bodyMuted}>{detected.address}</Text> : null}
           <Text style={typography.bodyMuted}>
-            Zone {detected.code}
+            Zone {detected.code} - Downtown Core
             {detectedDistance && Number.isFinite(detectedDistance)
               ? ` · ${formatDistance(detectedDistance)} away`
               : ''}
@@ -164,7 +175,7 @@ export default function Home() {
       <View style={{ height: spacing.xl }} />
 
       <View style={styles.nearbyHeader}>
-        <Text style={typography.label}>Other zones nearby</Text>
+        <Text style={typography.label}>Map and nearby zones</Text>
         <View style={styles.toggle} accessibilityRole="tablist">
           {(['list', 'map'] as const).map((mode) => {
             const selected = nearbyView === mode;
@@ -193,29 +204,31 @@ export default function Home() {
 
       {nearbyView === 'map' ? (
         // Include the detected/closest zone too so the map shows the full picture.
-        <View style={{ marginTop: spacing.sm }}>
+        <Card style={{ marginTop: spacing.sm, gap: spacing.sm }}>
+          <Text style={typography.label}>Live zone map</Text>
           <ZonesMap
             zones={sortedZones.map((s) => s.zone)}
             userCoords={locQ.data ?? null}
             onSelectZone={(z) =>
               router.push({ pathname: '/confirm', params: { zoneId: z.id } })
             }
+            height={390}
           />
-          <Text style={[typography.bodyMuted, { marginTop: spacing.sm }]}>
-            Tap a pin to confirm and start parking.
+          <Text style={typography.bodyMuted}>
+            Tap a zone marker to confirm parking.
           </Text>
-        </View>
+        </Card>
       ) : (
         others.map(({ zone: z, meters }) => (
           <Card key={z.id} style={{ marginTop: spacing.sm }}>
             <Text style={typography.h2}>{z.displayName}</Text>
             <Text style={typography.bodyMuted}>
-              Zone {z.code} · {formatMoney(z.rate.hourlyCents, z.rate.currency)}/hr
+              Zone {z.code} · {formatMoney(z.rate.hourlyCents, z.rate.currency)}/hr · 2HR limit enforced
               {Number.isFinite(meters) ? ` · ${formatDistance(meters)}` : ''}
             </Text>
             <Link
               href={{ pathname: '/confirm', params: { zoneId: z.id } }}
-              style={{ color: colors.primary, marginTop: spacing.sm }}
+              style={{ color: colors.link, marginTop: spacing.sm }}
             >
               Park here →
             </Link>
@@ -230,20 +243,24 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.lg, gap: spacing.sm },
+  container: { padding: spacing.lg, gap: spacing.md },
   headerMenuTrigger: {
-    minWidth: 70,
+    minWidth: 72,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
-    marginRight: 2,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceAlt,
   },
   headerMenuTriggerText: {
     color: colors.text,
-    fontSize: 15,
-    fontWeight: '400',
-    textDecorationLine: 'underline',
-    paddingRight: 8,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   menuBackdrop: {
     flex: 1,
@@ -266,8 +283,38 @@ const styles = StyleSheet.create({
     shadowOffset: { width: -4, height: 0 },
     elevation: 12,
   },
-  menuScrollContent: {
+  menuContent: {
+    flex: 1,
+    justifyContent: 'space-between',
     paddingVertical: spacing.sm,
+  },
+  menuTop: {
+    gap: 2,
+  },
+  menuSectionTitle: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    paddingBottom: 6,
+  },
+  menuSectionDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginHorizontal: 8,
+    marginBottom: spacing.sm,
+  },
+  menuFooter: {
+    paddingBottom: spacing.sm,
+  },
+  menuDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginHorizontal: 8,
+    marginBottom: spacing.sm,
   },
   menuEmail: {
     color: colors.text,
@@ -286,6 +333,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  signOutText: {
+    color: '#fca5a5',
+  },
   nearbyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -293,17 +343,29 @@ const styles = StyleSheet.create({
   },
   toggle: {
     flexDirection: 'row',
-    borderRadius: radii.pill,
+    borderRadius: radii.sm,
     backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
     padding: 2,
   },
   toggleBtn: {
     paddingVertical: 6,
     paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
+    borderRadius: radii.sm,
   },
-  toggleBtnSelected: { backgroundColor: colors.primary },
+  toggleBtnSelected: { backgroundColor: colors.primary, borderWidth: 1, borderColor: '#7FB0F2' },
   toggleText: { color: colors.text, fontWeight: '600', fontSize: 14 },
+  activeCard: {
+    gap: spacing.sm,
+    position: 'relative',
+  },
+  activePaid: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    color: colors.concrete,
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });

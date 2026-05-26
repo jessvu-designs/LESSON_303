@@ -90,7 +90,7 @@ export default function ConfirmParking() {
   if (!zone) {
     return (
       <View style={styles.container}>
-        <Text style={typography.h2}>Zone not found.</Text>
+        <Text style={typography.h2}>Selected zone unavailable.</Text>
       </View>
     );
   }
@@ -101,11 +101,11 @@ export default function ConfirmParking() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Card style={{ gap: spacing.xs }}>
-        <Text style={typography.label}>Location</Text>
+        <Text style={typography.label}>Selected zone</Text>
         <Text style={typography.h2}>{zone.displayName}</Text>
         {zone.address ? <Text style={typography.bodyMuted}>{zone.address}</Text> : null}
         <Text style={typography.bodyMuted}>
-          Zone {zone.code}
+          Zone {zone.code} · {zone.rules.maxSessionMinutes ? `${Math.floor(zone.rules.maxSessionMinutes / 60)}HR limit enforced` : 'Posted parking limits apply'}
           {distance != null ? ` · ${formatDistance(distance)} away` : ''}
         </Text>
       </Card>
@@ -119,7 +119,7 @@ export default function ConfirmParking() {
       {effectivePin ? (
         <View style={{ gap: 2 }}>
           <Text style={typography.bodyMuted}>
-            Drag the blue pin on the map to fine-tune your exact spot.
+            Drag the blue pin to match your exact parking spot.
           </Text>
           {addressQ.data ? (
             <Text style={typography.body}>Your spot: {addressQ.data}</Text>
@@ -130,7 +130,7 @@ export default function ConfirmParking() {
         <Card style={{ gap: spacing.xs, borderColor: colors.primary, borderWidth: 1 }}>
           <Text style={typography.label}>Closer zone detected</Text>
           <Text style={typography.body}>
-            Your pin is {formatDistance(closerZone.meters)} from
+            Current pin is {formatDistance(closerZone.meters)} from
             {' '}{closerZone.zone.displayName} (Zone {closerZone.zone.code}).
           </Text>
           <Button
@@ -161,7 +161,7 @@ export default function ConfirmParking() {
               hitSlop={12}
               accessibilityRole="link"
             >
-              <Text style={{ color: colors.primary, fontWeight: '600' }}>Manage</Text>
+              <Text style={{ color: colors.link, fontWeight: '600' }}>Manage</Text>
             </Pressable>
           </View>
           {vehicles.map((v) => {
@@ -191,7 +191,7 @@ export default function ConfirmParking() {
       )}
 
       <Card style={{ gap: spacing.md }}>
-        <Text style={typography.label}>How long?</Text>
+        <Text style={typography.label}>Select parking duration</Text>
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <View style={{ flex: 1 }}>
             <Dropdown
@@ -219,7 +219,7 @@ export default function ConfirmParking() {
       </Card>
 
       <Card style={{ gap: spacing.xs }}>
-        <Text style={typography.label}>Total</Text>
+        <Text style={typography.label}>Estimated total</Text>
         <Text style={typography.h1}>
           {quoteQ.data
             ? formatMoney(quoteQ.data.totalCents, quoteQ.data.currency)
@@ -254,12 +254,12 @@ export default function ConfirmParking() {
       <Button
         label={
           start.isPending
-            ? 'Starting…'
+            ? 'Confirming…'
             : !pm
             ? 'Add a card to continue'
             : overMax
             ? 'Reduce time to continue'
-            : 'Start parking'
+            : 'Confirm parking'
         }
         disabled={overMax || start.isPending || !pm}
         onPress={() => {
@@ -303,8 +303,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
-    borderRadius: radii.md,
-    borderWidth: 1,
+    borderRadius: radii.sm,
+    borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.surfaceAlt,
   },

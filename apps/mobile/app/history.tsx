@@ -25,8 +25,8 @@ export default function History() {
   if (sessions.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={typography.h2}>No history yet</Text>
-        <Text style={typography.bodyMuted}>Your past parking sessions will appear here.</Text>
+        <Text style={typography.h2}>No parking history yet</Text>
+        <Text style={typography.bodyMuted}>Completed parking sessions will appear here.</Text>
       </View>
     );
   }
@@ -42,7 +42,7 @@ export default function History() {
         const zone = zonesById.get(item.zoneId);
         return (
           <Card>
-            <Text style={typography.h2}>{zone?.displayName ?? 'Unknown zone'}</Text>
+            <Text style={typography.h2}>{zone?.displayName ?? 'Unmapped zone'}</Text>
             <Text style={typography.bodyMuted}>
               {formatDate(item.startedAt)} · {formatTime(item.startedAt)} – {formatTime(item.expiresAt)}
             </Text>

@@ -28,8 +28,8 @@ export default function Extend() {
   if (!session) {
     return (
       <View style={styles.container}>
-        <Text style={typography.h2}>No active session.</Text>
-        <Button label="Back" onPress={() => router.back()} />
+        <Text style={typography.h2}>No active parking session.</Text>
+        <Button label="Return" onPress={() => router.back()} />
       </View>
     );
   }
@@ -41,11 +41,11 @@ export default function Extend() {
         <Card>
           <Text style={typography.h2}>Extension not allowed here</Text>
           <Text style={[typography.bodyMuted, { marginTop: spacing.sm }]}>
-            This zone does not allow extending an active session. You'll need to start a new session
+            This zone does not allow extension. You will need to start a new parking session
             after this one ends.
           </Text>
         </Card>
-        <Button label="Back" variant="secondary" onPress={() => router.back()} />
+        <Button label="Return" variant="secondary" onPress={() => router.back()} />
       </View>
     );
   }
@@ -55,7 +55,7 @@ export default function Extend() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Card style={{ gap: spacing.md }}>
-        <Text style={typography.label}>Add time</Text>
+        <Text style={typography.label}>Extension duration</Text>
         <View style={styles.choices}>
           {CHOICES.map((m) => {
             const selected = m === added;
@@ -79,14 +79,14 @@ export default function Extend() {
       <Card style={{ gap: spacing.xs }}>
         <Text style={typography.label}>New end time</Text>
         <Text style={typography.h1}>{formatTime(newExpiry.toISOString())}</Text>
-        <Text style={typography.label}>Added cost</Text>
+        <Text style={typography.label}>Additional cost</Text>
         <Text style={typography.h2}>
           {quoteQ.data ? formatMoney(quoteQ.data.totalCents, quoteQ.data.currency) : '—'}
         </Text>
       </Card>
 
       <Button
-        label={extend.isPending ? 'Extending…' : `Extend by ${formatDuration(added)}`}
+        label={extend.isPending ? 'Extending…' : `Extend parking by ${formatDuration(added)}`}
         disabled={extend.isPending}
         onPress={() =>
           extend.mutate(

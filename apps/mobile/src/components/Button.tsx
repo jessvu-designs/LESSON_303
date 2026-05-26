@@ -17,8 +17,15 @@ export function Button({ label, onPress, variant = 'primary', disabled, style, a
   const bg =
     variant === 'primary' ? colors.primary
     : variant === 'danger' ? colors.danger
-    : colors.surfaceAlt;
-  const fg = variant === 'secondary' ? colors.text : colors.primaryText;
+    : 'transparent';
+  const fg =
+    variant === 'secondary' ? colors.concrete
+    : variant === 'danger' ? '#000000'
+    : colors.primaryText;
+  const borderColor =
+    variant === 'primary' ? '#7FB0F2'
+    : variant === 'danger' ? '#FF9E8C'
+    : colors.concrete;
   return (
     <Pressable
       onPress={onPress}
@@ -28,7 +35,11 @@ export function Button({ label, onPress, variant = 'primary', disabled, style, a
       accessibilityHint={accessibilityHint}
       style={({ pressed }) => [
         styles.btn,
-        { backgroundColor: bg, opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
+        {
+          backgroundColor: bg,
+          borderColor,
+          opacity: disabled ? 0.5 : pressed ? 0.86 : 1,
+        },
         style,
       ]}
     >
@@ -39,11 +50,18 @@ export function Button({ label, onPress, variant = 'primary', disabled, style, a
 
 const styles = StyleSheet.create({
   btn: {
-    minHeight: 52, // large tap target
+    minHeight: 54, // large tap target
     paddingHorizontal: spacing.lg,
-    borderRadius: radii.md,
+    borderRadius: radii.sm,
+    borderWidth: 2,
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontSize: 17, fontWeight: '600' },
+  label: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
 });

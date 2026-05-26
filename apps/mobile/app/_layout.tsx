@@ -59,7 +59,9 @@ export default function RootLayout() {
                 screenOptions={{
                   headerStyle: { backgroundColor: colors.bg },
                   headerTintColor: colors.text,
-                  headerTitleStyle: { fontWeight: '600' },
+                  headerTitleStyle: {
+                    fontWeight: '700',
+                  },
                   contentStyle: { backgroundColor: colors.bg },
                 }}
               >
@@ -68,18 +70,18 @@ export default function RootLayout() {
                   options={{
                     headerTitle: () => (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <MaterialCommunityIcons name="car-outline" size={18} color={colors.text} />
-                        <Text style={{ color: colors.text, fontWeight: '600', fontSize: 17 }}>PARKER</Text>
+                        <MaterialCommunityIcons name="car-outline" size={19} color={colors.text} />
+                        <Text style={{ color: colors.text, fontWeight: '700', fontSize: 17, letterSpacing: 0.8 }}>PARKER</Text>
                       </View>
                     ),
                   }}
                 />
-                <Stack.Screen name="confirm" options={{ title: 'Confirm Parking' }} />
-                <Stack.Screen name="session" options={{ title: 'Active Session' }} />
-                <Stack.Screen name="extend" options={{ title: 'Extend Time', presentation: 'modal' }} />
+                <Stack.Screen name="confirm" options={{ title: 'Confirm Parking Zone' }} />
+                <Stack.Screen name="session" options={{ title: 'Active Parking' }} />
+                <Stack.Screen name="extend" options={{ title: 'Extend Parking', presentation: 'modal' }} />
                 <Stack.Screen name="history" options={{ title: 'History' }} />
-                <Stack.Screen name="wallet" options={{ title: 'Wallet' }} />
-                <Stack.Screen name="vehicles" options={{ title: 'Vehicles' }} />
+                <Stack.Screen name="wallet" options={{ title: 'Payment Methods' }} />
+                <Stack.Screen name="vehicles" options={{ title: 'Registered Vehicles' }} />
                 <Stack.Screen name="login" options={{ headerShown: false }} />
               </Stack>
             </AuthGate>

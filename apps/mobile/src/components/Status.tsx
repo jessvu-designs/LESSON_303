@@ -6,7 +6,7 @@ import { Button } from './Button';
 export function Loading({ label = 'Loading…' }: { label?: string }) {
   return (
     <View style={styles.center}>
-      <ActivityIndicator color={colors.primary} />
+      <ActivityIndicator color={colors.warning} />
       <Text style={[typography.bodyMuted, { marginTop: spacing.sm }]}>{label}</Text>
     </View>
   );
@@ -41,5 +41,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xl,
     backgroundColor: colors.bg,
+    gap: spacing.xs,
   },
 });

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, radii, spacing, typography } from '../theme/tokens';
+import { colors, radii, spacing } from '../theme/tokens';
 
 interface DropdownProps {
   label: string;
@@ -27,7 +27,7 @@ export function Dropdown({ label, value, options, onChange, suffix = '' }: Dropd
           <Text style={styles.label}>{label}</Text>
           <Text style={styles.value}>{displayText}</Text>
         </View>
-        <Text style={styles.chevron}>⌄</Text>
+        <Text style={styles.chevron}>v</Text>
       </Pressable>
 
       <Modal
@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    borderRadius: radii.md,
-    borderWidth: 1,
+    borderRadius: radii.sm,
+    borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.surfaceAlt,
   },
@@ -91,28 +91,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     marginBottom: 4,
+    fontWeight: '700',
   },
   value: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text,
   },
   chevron: {
-    fontSize: 24,
-    color: colors.primary,
+    fontSize: 20,
+    color: colors.warning,
+    fontWeight: '700',
   },
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(2,6,23,0.5)',
+    backgroundColor: 'rgba(10,10,10,0.72)',
     justifyContent: 'flex-end',
     padding: spacing.lg,
   },
   menu: {
     backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
+    borderRadius: radii.sm,
+    borderWidth: 2,
     borderColor: colors.border,
     maxHeight: '60%',
   },
@@ -124,7 +126,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   optionsList: {
     maxHeight: 300,
@@ -140,9 +142,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   optionSelected: {
-    backgroundColor: 'rgba(59,130,246,0.28)',
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
+    backgroundColor: 'rgba(244,197,66,0.22)',
+    borderLeftWidth: 4,
+    borderLeftColor: colors.warning,
   },
   optionText: {
     fontSize: 16,
