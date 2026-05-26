@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
@@ -47,6 +47,55 @@ function AuthGate({ children }: { children: React.ReactElement | React.ReactElem
   return <>{children}</>;
 }
 
+// On web desktop, constrain the app to a phone-sized window (iPhone 14/15
+// logical resolution: 390 x 844) centered on a dark backdrop so it always
+// looks like the mobile app. On native, this is a passthrough.
+const PHONE_WIDTH = 390;
+const PHONE_HEIGHT = 844;
+const PHONE_RADIUS = 44;
+const BACKDROP_COLOR = '#0A0A0A';
+
+function MobileFrame({ children }: { children: React.ReactNode }) {
+  if (Platform.OS !== 'web') return <>{children}</>;
+  // Inject global CSS once so html/body fill the viewport with the backdrop.
+  if (typeof document !== 'undefined' && !document.getElementById('mobile-frame-style')) {
+    const style = document.createElement('style');
+    style.id = 'mobile-frame-style';
+    style.innerHTML = `
+      html, body, #root { height: 100%; margin: 0; background: ${BACKDROP_COLOR}; }
+      body { overflow: hidden; }
+    `;
+    document.head.appendChild(style);
+  }
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: BACKDROP_COLOR,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <View
+        style={{
+          width: '100%',
+          height: '100%',
+          maxWidth: PHONE_WIDTH,
+          maxHeight: PHONE_HEIGHT,
+          backgroundColor: colors.bg,
+          overflow: 'hidden',
+          borderRadius: PHONE_RADIUS,
+          ...(Platform.OS === 'web'
+            ? ({ boxShadow: '0 10px 60px rgba(0,0,0,0.7)' } as object)
+            : {}),
+        }}
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
+
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -54,7 +103,8 @@ export default function RootLayout() {
         <MaybeStripeProvider>
           <SafeAreaProvider>
             <StatusBar style="light" />
-            <AuthGate>
+            <MobileFrame>
+              <AuthGate>
               <Stack
                 screenOptions={{
                   headerStyle: { backgroundColor: colors.bg },
@@ -85,6 +135,7 @@ export default function RootLayout() {
                 <Stack.Screen name="login" options={{ headerShown: false }} />
               </Stack>
             </AuthGate>
+            </MobileFrame>
           </SafeAreaProvider>
         </MaybeStripeProvider>
       </AuthProvider>

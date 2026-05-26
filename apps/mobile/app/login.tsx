@@ -7,6 +7,16 @@ import { colors, radii, spacing, typography } from '../src/theme/tokens';
 
 type Mode = 'signin' | 'signup';
 
+// RN's Alert.alert is a no-op on web. Fall back to window.alert so the user
+// can actually see login / network errors in a browser.
+function notify(title: string, message: string) {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+}
+
 export default function Login() {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<Mode>('signin');
@@ -21,7 +31,10 @@ export default function Login() {
       if (mode === 'signin') await login(email.trim(), password);
       else await register(email.trim(), password, name.trim() || undefined);
     } catch (e) {
-      Alert.alert(mode === 'signin' ? 'Could not sign in' : 'Could not create account', (e as Error).message);
+      notify(
+        mode === 'signin' ? 'Could not sign in' : 'Could not create account',
+        (e as Error).message,
+      );
     } finally {
       setBusy(false);
     }
