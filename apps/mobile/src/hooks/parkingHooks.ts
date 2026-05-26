@@ -101,8 +101,10 @@ export function useSessions() {
 }
 
 function invalidateSessions(qc: ReturnType<typeof useQueryClient>) {
-  qc.invalidateQueries({ queryKey: qk.activeSession });
-  qc.invalidateQueries({ queryKey: qk.sessions });
+  return Promise.all([
+    qc.refetchQueries({ queryKey: qk.activeSession }),
+    qc.refetchQueries({ queryKey: qk.sessions }),
+  ]);
 }
 
 export function useStartSession() {
@@ -110,7 +112,7 @@ export function useStartSession() {
   return useMutation({
     mutationFn: parkingApi.startSession,
     onSuccess: async (session) => {
-      invalidateSessions(qc);
+      await invalidateSessions(qc);
       if (await ensureNotificationPermission()) {
         await scheduleSessionReminders(session);
       }
@@ -124,7 +126,7 @@ export function useExtendSession() {
     mutationFn: (vars: { sessionId: string; addedMinutes: number }) =>
       parkingApi.extendSession(vars.sessionId, vars.addedMinutes),
     onSuccess: async (session) => {
-      invalidateSessions(qc);
+      await invalidateSessions(qc);
       // Reschedule against the new expiry.
       if (await ensureNotificationPermission()) {
         await scheduleSessionReminders(session);
@@ -138,7 +140,7 @@ export function useEndSession() {
   return useMutation({
     mutationFn: (sessionId: string) => parkingApi.endSession(sessionId),
     onSuccess: async (session) => {
-      invalidateSessions(qc);
+      await invalidateSessions(qc);
       await cancelSessionReminders(session.id);
     },
   });

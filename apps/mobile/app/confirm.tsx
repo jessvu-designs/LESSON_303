@@ -43,19 +43,6 @@ export default function ConfirmParking() {
     if (locQ.data) setPinCoords(locQ.data);
   }, [locQ.data, pinCoords]);
   const addressQ = useReverseGeocode(pinCoords);
-
-  if (zoneQ.isLoading || vehiclesQ.isLoading || pmsQ.isLoading) {
-    return <Loading />;
-  }
-  if (zoneQ.isError) {
-    return (
-      <ErrorState
-        message={(zoneQ.error as Error).message}
-        onRetry={() => zoneQ.refetch()}
-      />
-    );
-  }
-
   const zone = zoneQ.data;
   const vehicles = vehiclesQ.data ?? [];
   const defaultVehicle = vehicles.find((v) => v.isDefault) ?? vehicles[0] ?? null;
@@ -63,25 +50,10 @@ export default function ConfirmParking() {
     vehicles.find((v) => v.id === selectedVehicleId) ?? defaultVehicle;
   const pm = pmsQ.data?.[0];
 
-  if (!zone) {
-    return (
-      <View style={styles.container}>
-        <Text style={typography.h2}>Zone not found.</Text>
-      </View>
-    );
-  }
-
-  const overMax =
-    zone.rules.maxSessionMinutes !== undefined && minutes > zone.rules.maxSessionMinutes;
-
-  // Effective spot = the user-dragged pin, falling back to detected location,
-  // and finally the zone itself so distance is always defined.
   const effectivePin: Coords | null = pinCoords ?? locQ.data ?? null;
   const distance =
     effectivePin && zone.geo ? distanceMeters(effectivePin, zone.geo) : null;
 
-  // If the dragged pin is meaningfully closer to a different known zone,
-  // surface a one-tap switch so the user doesn't pay for the wrong zone.
   const closerZone = useMemo(() => {
     if (!effectivePin || !zone.geo || !zonesQ.data) return null;
     const here = distanceMeters(effectivePin, zone.geo);
@@ -95,6 +67,29 @@ export default function ConfirmParking() {
     }
     return best;
   }, [effectivePin, zone, zonesQ.data]);
+
+  if (zoneQ.isLoading || vehiclesQ.isLoading || pmsQ.isLoading) {
+    return <Loading />;
+  }
+  if (zoneQ.isError) {
+    return (
+      <ErrorState
+        message={(zoneQ.error as Error).message}
+        onRetry={() => zoneQ.refetch()}
+      />
+    );
+  }
+
+  if (!zone) {
+    return (
+      <View style={styles.container}>
+        <Text style={typography.h2}>Zone not found.</Text>
+      </View>
+    );
+  }
+
+  const overMax =
+    zone.rules.maxSessionMinutes !== undefined && minutes > zone.rules.maxSessionMinutes;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

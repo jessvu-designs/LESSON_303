@@ -1,6 +1,6 @@
 import { Link, Stack, router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../src/auth/AuthProvider';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
@@ -20,12 +20,21 @@ export default function Home() {
   const [now, setNow] = useState(Date.now());
   const [nearbyView, setNearbyView] = useState<'list' | 'map'>('list');
   const [menuOpen, setMenuOpen] = useState(false);
+  const drawerAnimRef = useRef(new Animated.Value(Dimensions.get('window').width)).current;
 
   useEffect(() => {
     if (!active) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [active]);
+
+  useEffect(() => {
+    Animated.timing(drawerAnimRef, {
+      toValue: menuOpen ? 0 : Dimensions.get('window').width,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [menuOpen, drawerAnimRef]);
 
   // Sort by distance when we have a fix, otherwise show server order.
   const sortedZones = useMemo(() => {
@@ -72,27 +81,31 @@ export default function Home() {
         }}
       />
       <Modal
-        animationType="fade"
+        animationType="none"
         transparent
         visible={menuOpen}
         onRequestClose={() => setMenuOpen(false)}
       >
         <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
-          <Pressable style={styles.menuCard} onPress={() => {}}>
-            <Text style={styles.menuEmail}>Signed in as {user?.email}</Text>
-            <Pressable onPress={() => { setMenuOpen(false); router.push('/wallet'); }} style={styles.menuItem}>
-              <Text style={styles.menuItemText}>Wallet</Text>
+          <Animated.View style={[styles.menuCard, { transform: [{ translateX: drawerAnimRef }] }]}>
+            <Pressable onPress={() => {}} style={{ flex: 1 }}>
+              <ScrollView contentContainerStyle={styles.menuScrollContent}>
+                <Text style={styles.menuEmail}>Signed in as {user?.email}</Text>
+                <Pressable onPress={() => { setMenuOpen(false); router.push('/wallet'); }} style={styles.menuItem}>
+                  <Text style={styles.menuItemText}>Wallet</Text>
+                </Pressable>
+                <Pressable onPress={() => { setMenuOpen(false); router.push('/vehicles'); }} style={styles.menuItem}>
+                  <Text style={styles.menuItemText}>Vehicles</Text>
+                </Pressable>
+                <Pressable onPress={() => { setMenuOpen(false); router.push('/history'); }} style={styles.menuItem}>
+                  <Text style={styles.menuItemText}>Receipts & history</Text>
+                </Pressable>
+                <Pressable onPress={() => { setMenuOpen(false); signOut(); }} style={styles.menuItem}>
+                  <Text style={[styles.menuItemText, { color: '#fca5a5' }]}>Sign out</Text>
+                </Pressable>
+              </ScrollView>
             </Pressable>
-            <Pressable onPress={() => { setMenuOpen(false); router.push('/vehicles'); }} style={styles.menuItem}>
-              <Text style={styles.menuItemText}>Vehicles</Text>
-            </Pressable>
-            <Pressable onPress={() => { setMenuOpen(false); router.push('/history'); }} style={styles.menuItem}>
-              <Text style={styles.menuItemText}>Receipts & history</Text>
-            </Pressable>
-            <Pressable onPress={() => { setMenuOpen(false); signOut(); }} style={styles.menuItem}>
-              <Text style={[styles.menuItemText, { color: '#fca5a5' }]}>Sign out</Text>
-            </Pressable>
-          </Pressable>
+          </Animated.View>
         </Pressable>
       </Modal>
       <ScrollView contentContainerStyle={styles.container}>
@@ -213,35 +226,40 @@ const styles = StyleSheet.create({
   headerMenuTriggerText: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '400',
+    textDecorationLine: 'underline',
+    paddingRight: 8,
   },
   menuBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(2,6,23,0.2)',
-    paddingTop: 92,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'flex-end',
   },
   menuCard: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
     width: 230,
+    height: '100%',
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderLeftWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.md,
-    borderTopRightRadius: 10,
     padding: spacing.sm,
     gap: 2,
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: -4, height: 0 },
     elevation: 12,
   },
+  menuScrollContent: {
+    paddingVertical: spacing.sm,
+  },
   menuEmail: {
-    color: colors.muted,
+    color: colors.text,
     fontSize: 12,
     marginBottom: 4,
     paddingHorizontal: 8,
+    paddingTop: 16,
   },
   menuItem: {
     paddingHorizontal: 8,
