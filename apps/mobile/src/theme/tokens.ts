@@ -29,6 +29,7 @@ export const typography = {
   display: { fontSize: 48, fontWeight: '700' as const, color: colors.text },
   h1: { fontSize: 28, fontWeight: '700' as const, color: colors.text },
   h2: { fontSize: 20, fontWeight: '600' as const, color: colors.text },
+  h3: { fontSize: 18, fontWeight: '600' as const, color: colors.text },
   body: { fontSize: 16, color: colors.text },
   bodyMuted: { fontSize: 16, color: colors.textMuted },
   label: { fontSize: 13, color: colors.textMuted, textTransform: 'uppercase' as const, letterSpacing: 0.5 },

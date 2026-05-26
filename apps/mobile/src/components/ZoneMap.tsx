@@ -5,7 +5,8 @@
 // When `onUserCoordsChange` is provided the user marker becomes draggable,
 // letting the driver fine-tune the exact parking spot when GPS lands
 // between two zones.
-import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
 import type { ParkingZone } from '@parking/shared-types';
 import { colors, radii } from '../theme/tokens';
 
@@ -99,20 +100,34 @@ export function ZoneMap({
   );
 }
 
-function buildStaticMapUrl(zone: ParkingZone, user?: { lat: number; lng: number } | null) {
-  const focus = user ?? zone.geo!;
-  const base = 'https://staticmap.openstreetmap.de/staticmap.php';
-  const params = new URLSearchParams({
-    center: `${focus.lat},${focus.lng}`,
-    zoom: '16',
-    size: '1200x700',
-    maptype: 'mapnik',
-  });
+function projectPoint(
+  lat: number,
+  lng: number,
+  center: { lat: number; lng: number },
+  delta = 0.01,
+): any {
+  const x = ((lng - (center.lng - delta / 2)) / delta) * 100;
+  const y = (1 - (lat - (center.lat - delta / 2)) / delta) * 100;
+  return {
+    left: `${Math.min(96, Math.max(4, x))}%`,
+    top: `${Math.min(96, Math.max(4, y))}%`,
+  };
+}
 
-  const markers = [`${zone.geo!.lat},${zone.geo!.lng},red-pushpin`];
-  if (user) markers.push(`${user.lat},${user.lng},blue-pushpin`);
-  params.set('markers', markers.join('|'));
-  return `${base}?${params.toString()}`;
+function latLngToTile(lat: number, lng: number, zoom: number) {
+  const n = 2 ** zoom;
+  const x = Math.floor(((lng + 180) / 360) * n);
+  const latRad = (lat * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n,
+  );
+  return { x, y };
+}
+
+function buildTileUrl(center: { lat: number; lng: number }, delta = 0.01) {
+  const zoom = delta > 0.02 ? 14 : 16;
+  const tile = latLngToTile(center.lat, center.lng, zoom);
+  return `https://tile.openstreetmap.org/${zoom}/${tile.x}/${tile.y}.png`;
 }
 
 function StaticZoneMapFallback({
@@ -124,12 +139,32 @@ function StaticZoneMapFallback({
   userCoords: { lat: number; lng: number } | null;
   height: number;
 }) {
-  const staticUrl = buildStaticMapUrl(zone, userCoords);
+  const center = userCoords ?? zone.geo!;
+  const tileUrl = buildTileUrl(center);
+  const [tileFailed, setTileFailed] = useState(false);
+  const useSchematic = Platform.OS !== 'web' || tileFailed;
 
   return (
     <View style={{ gap: 8 }}>
       <View style={[styles.wrap, { height }]}> 
-        <Image source={{ uri: staticUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        {!useSchematic ? (
+          <Image
+            source={{ uri: tileUrl }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+            onError={() => setTileFailed(true)}
+          />
+        ) : (
+          <View style={styles.fallbackMapBg}>
+            <View style={[styles.pin, styles.pinZone, projectPoint(zone.geo!.lat, zone.geo!.lng, center)]} />
+            {userCoords ? (
+              <View style={[styles.pin, styles.pinUser, projectPoint(userCoords.lat, userCoords.lng, center)]} />
+            ) : null}
+            <Text style={styles.fallbackLegend}>
+              {tileFailed ? 'Map preview (fallback)' : 'Schematic map preview'}
+            </Text>
+          </View>
+        )}
       </View>
       <Pressable
         onPress={() =>
@@ -150,6 +185,39 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: '#0a1835',
+  },
+  fallbackMapBg: {
+    flex: 1,
+    backgroundColor: '#06122b',
+  },
+  pin: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    marginLeft: -6,
+    marginTop: -6,
+  },
+  pinZone: {
+    backgroundColor: '#ef4444',
+    borderColor: '#fecaca',
+  },
+  pinUser: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#bfdbfe',
+  },
+  fallbackLegend: {
+    position: 'absolute',
+    left: 10,
+    bottom: 10,
+    color: colors.textMuted,
+    fontSize: 12,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   fallbackLink: {
     color: colors.primary,

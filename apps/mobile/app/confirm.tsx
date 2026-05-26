@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
+import { Dropdown } from '../src/components/Dropdown';
 import { ErrorState, Loading } from '../src/components/Status';
 import { ZoneMap } from '../src/components/ZoneMap';
 import {
@@ -19,12 +20,18 @@ import { type Coords, distanceMeters, formatDistance } from '../src/services/loc
 import { colors, radii, spacing, typography } from '../src/theme/tokens';
 import { formatDuration, formatMoney } from '../src/utils/format';
 
-const DURATIONS = [30, 60, 120, 180];
+const DURATIONS = [15, 30, 45, 60, 90, 120, 180];
+
+const HOURS = Array.from({ length: 5 }, (_, i) => i); // 0-4 hours
+const MINUTES = [0, 15, 30, 45]; // 0, 15, 30, 45 minutes
 
 export default function ConfirmParking() {
   const { zoneId } = useLocalSearchParams<{ zoneId: string }>();
-  const [minutes, setMinutes] = useState(60);
+  const [hours, setHours] = useState(1);
+  const [mins, setMins] = useState(0);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+
+  const minutes = hours * 60 + mins;
 
   const zoneQ = useZone(zoneId);
   const zonesQ = useZones();
@@ -185,23 +192,24 @@ export default function ConfirmParking() {
 
       <Card style={{ gap: spacing.md }}>
         <Text style={typography.label}>How long?</Text>
-        <View style={styles.choices}>
-          {DURATIONS.map((d) => {
-            const selected = d === minutes;
-            return (
-              <Pressable
-                key={d}
-                onPress={() => setMinutes(d)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                style={[styles.choice, selected && styles.choiceSelected]}
-              >
-                <Text style={[styles.choiceText, selected && { color: colors.primaryText }]}>
-                  {formatDuration(d)}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <View style={{ flex: 1 }}>
+            <Dropdown
+              label="Hours"
+              value={hours}
+              options={HOURS}
+              onChange={setHours}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Dropdown
+              label="Minutes"
+              value={mins}
+              options={MINUTES}
+              onChange={setMins}
+              suffix=" min"
+            />
+          </View>
         </View>
         {zone.rules.maxSessionMinutes ? (
           <Text style={typography.bodyMuted}>
@@ -280,7 +288,6 @@ export default function ConfirmParking() {
 
 const styles = StyleSheet.create({
   container: { padding: spacing.lg, gap: spacing.md },
-  choices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   choice: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -288,6 +295,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
+    alignItems: 'center',
   },
   choiceSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   choiceText: { color: colors.text, fontSize: 16, fontWeight: '600' },

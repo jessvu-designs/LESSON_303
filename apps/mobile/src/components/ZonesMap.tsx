@@ -2,7 +2,8 @@
 // user's location when known) and calls `onSelectZone` when a pin is tapped.
 // Renders nothing when react-native-maps isn't available (e.g. web), so the
 // list view stays the canonical fallback.
-import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
 import type { ParkingZone } from '@parking/shared-types';
 import { colors, radii } from '../theme/tokens';
 
@@ -101,23 +102,40 @@ function computeRegion(
   return { latitude, longitude, latitudeDelta, longitudeDelta };
 }
 
-function buildStaticMapUrl(zones: ParkingZone[], user?: { lat: number; lng: number } | null) {
-  const region = computeRegion(zones, user);
-  const base = 'https://staticmap.openstreetmap.de/staticmap.php';
-  const params = new URLSearchParams({
-    center: `${region.latitude},${region.longitude}`,
-    zoom: '14',
-    size: '1200x700',
-    maptype: 'mapnik',
-  });
+function projectPoint(
+  lat: number,
+  lng: number,
+  region: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number },
+): any {
+  const halfLat = region.latitudeDelta / 2;
+  const halfLng = region.longitudeDelta / 2;
+  const x = ((lng - (region.longitude - halfLng)) / region.longitudeDelta) * 100;
+  const y = (1 - (lat - (region.latitude - halfLat)) / region.latitudeDelta) * 100;
+  return {
+    left: `${Math.min(96, Math.max(4, x))}%`,
+    top: `${Math.min(96, Math.max(4, y))}%`,
+  };
+}
 
-  const markers = zones
-    .filter((z) => !!z.geo)
-    .map((z) => `${z.geo!.lat},${z.geo!.lng},red-pushpin`);
-  if (user) markers.push(`${user.lat},${user.lng},blue-pushpin`);
-  if (markers.length) params.set('markers', markers.join('|'));
+function latLngToTile(lat: number, lng: number, zoom: number) {
+  const n = 2 ** zoom;
+  const x = Math.floor(((lng + 180) / 360) * n);
+  const latRad = (lat * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n,
+  );
+  return { x, y };
+}
 
-  return `${base}?${params.toString()}`;
+function buildTileUrl(region: {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+}) {
+  const zoom = region.latitudeDelta > 0.05 ? 12 : region.latitudeDelta > 0.02 ? 13 : 14;
+  const tile = latLngToTile(region.latitude, region.longitude, zoom);
+  return `https://tile.openstreetmap.org/${zoom}/${tile.x}/${tile.y}.png`;
 }
 
 function StaticZonesMapFallback({
@@ -131,13 +149,42 @@ function StaticZonesMapFallback({
   height: number;
   onSelectZone?: (zone: ParkingZone) => void;
 }) {
-  const staticUrl = buildStaticMapUrl(zones, userCoords);
+  const region = computeRegion(zones, userCoords);
   const firstZone = zones[0];
+  const tileUrl = buildTileUrl(region);
+  const [tileFailed, setTileFailed] = useState(false);
+  const useSchematic = Platform.OS !== 'web' || tileFailed;
 
   return (
     <View style={{ gap: 8 }}>
       <View style={[styles.wrap, { height }]}>
-        <Image source={{ uri: staticUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        {!useSchematic ? (
+          <Image
+            source={{ uri: tileUrl }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+            onError={() => setTileFailed(true)}
+          />
+        ) : (
+          <View style={styles.fallbackMapBg}>
+            {zones.map((z) => {
+              const pin = projectPoint(z.geo!.lat, z.geo!.lng, region);
+              return <View key={z.id} style={[styles.pin, styles.pinZone, pin]} />;
+            })}
+            {userCoords ? (
+              <View
+                style={[
+                  styles.pin,
+                  styles.pinUser,
+                  projectPoint(userCoords.lat, userCoords.lng, region),
+                ]}
+              />
+            ) : null}
+            <Text style={styles.fallbackLegend}>
+              {tileFailed ? 'Map preview (fallback)' : 'Schematic map preview'}
+            </Text>
+          </View>
+        )}
       </View>
       {onSelectZone ? (
         <View style={styles.fallbackActions}>
@@ -169,6 +216,39 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: '#0a1835',
+  },
+  fallbackMapBg: {
+    flex: 1,
+    backgroundColor: '#06122b',
+  },
+  pin: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    marginLeft: -6,
+    marginTop: -6,
+  },
+  pinZone: {
+    backgroundColor: '#ef4444',
+    borderColor: '#fecaca',
+  },
+  pinUser: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#bfdbfe',
+  },
+  fallbackLegend: {
+    position: 'absolute',
+    left: 10,
+    bottom: 10,
+    color: colors.textMuted,
+    fontSize: 12,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   fallbackActions: {
     flexDirection: 'row',

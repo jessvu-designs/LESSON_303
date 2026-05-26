@@ -6,7 +6,7 @@ import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
 import { ErrorState, Loading } from '../src/components/Status';
 import { ZonesMap } from '../src/components/ZonesMap';
-import { useActiveSession, useCurrentLocation, useZones } from '../src/hooks/parkingHooks';
+import { useActiveSession, useCurrentLocation, useZone, useZones } from '../src/hooks/parkingHooks';
 import { distanceMeters, formatDistance } from '../src/services/location';
 import { colors, radii, spacing, typography } from '../src/theme/tokens';
 import { formatCountdown, formatMoney } from '../src/utils/format';
@@ -17,6 +17,7 @@ export default function Home() {
   const locQ = useCurrentLocation();
   const activeQ = useActiveSession();
   const active = activeQ.data ?? null;
+  const activeZoneQ = useZone(active?.zoneId);
   const [now, setNow] = useState(Date.now());
   const [nearbyView, setNearbyView] = useState<'list' | 'map'>('list');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -121,6 +122,12 @@ export default function Home() {
           <Text style={typography.display}>
             {formatCountdown(new Date(active.expiresAt).getTime() - now)}
           </Text>
+          {activeZoneQ.data ? (
+            <>
+              <Text style={typography.h2}>{activeZoneQ.data.displayName}</Text>
+              {activeZoneQ.data.address ? <Text style={typography.bodyMuted}>{activeZoneQ.data.address}</Text> : null}
+            </>
+          ) : null}
           <Text style={typography.bodyMuted}>
             Paid {formatMoney(active.totalPaidCents, active.currency)}
           </Text>
