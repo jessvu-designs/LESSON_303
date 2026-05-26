@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
@@ -9,11 +9,13 @@ import {
   useCurrentLocation,
   usePaymentMethods,
   useQuote,
+  useReverseGeocode,
   useStartSession,
   useVehicles,
   useZone,
+  useZones,
 } from '../src/hooks/parkingHooks';
-import { distanceMeters, formatDistance } from '../src/services/location';
+import { type Coords, distanceMeters, formatDistance } from '../src/services/location';
 import { colors, radii, spacing, typography } from '../src/theme/tokens';
 import { formatDuration, formatMoney } from '../src/utils/format';
 
@@ -25,11 +27,22 @@ export default function ConfirmParking() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
 
   const zoneQ = useZone(zoneId);
+  const zonesQ = useZones();
   const vehiclesQ = useVehicles();
   const pmsQ = usePaymentMethods();
   const quoteQ = useQuote(zoneId, minutes);
   const locQ = useCurrentLocation();
   const start = useStartSession();
+
+  // Draggable parking-spot pin. Defaults to the device's location, then to
+  // the zone center if location isn't granted. Drives both the displayed
+  // distance and the reverse-geocoded address shown under the map.
+  const [pinCoords, setPinCoords] = useState<Coords | null>(null);
+  useEffect(() => {
+    if (pinCoords) return;
+    if (locQ.data) setPinCoords(locQ.data);
+  }, [locQ.data, pinCoords]);
+  const addressQ = useReverseGeocode(pinCoords);
 
   if (zoneQ.isLoading || vehiclesQ.isLoading || pmsQ.isLoading) {
     return <Loading />;
@@ -61,7 +74,27 @@ export default function ConfirmParking() {
   const overMax =
     zone.rules.maxSessionMinutes !== undefined && minutes > zone.rules.maxSessionMinutes;
 
-  const distance = locQ.data && zone.geo ? distanceMeters(locQ.data, zone.geo) : null;
+  // Effective spot = the user-dragged pin, falling back to detected location,
+  // and finally the zone itself so distance is always defined.
+  const effectivePin: Coords | null = pinCoords ?? locQ.data ?? null;
+  const distance =
+    effectivePin && zone.geo ? distanceMeters(effectivePin, zone.geo) : null;
+
+  // If the dragged pin is meaningfully closer to a different known zone,
+  // surface a one-tap switch so the user doesn't pay for the wrong zone.
+  const closerZone = useMemo(() => {
+    if (!effectivePin || !zone.geo || !zonesQ.data) return null;
+    const here = distanceMeters(effectivePin, zone.geo);
+    let best: { zone: typeof zone; meters: number } | null = null;
+    for (const z of zonesQ.data) {
+      if (z.id === zone.id || !z.geo) continue;
+      const m = distanceMeters(effectivePin, z.geo);
+      if (m < here - 25 && (!best || m < best.meters)) {
+        best = { zone: z, meters: m };
+      }
+    }
+    return best;
+  }, [effectivePin, zone, zonesQ.data]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -75,7 +108,41 @@ export default function ConfirmParking() {
         </Text>
       </Card>
 
-      <ZoneMap zone={zone} userCoords={locQ.data ?? null} />
+      <ZoneMap
+        zone={zone}
+        userCoords={effectivePin}
+        onUserCoordsChange={setPinCoords}
+        userMarkerSubtitle={addressQ.data ?? undefined}
+      />
+      {effectivePin ? (
+        <View style={{ gap: 2 }}>
+          <Text style={typography.bodyMuted}>
+            Drag the blue pin on the map to fine-tune your exact spot.
+          </Text>
+          {addressQ.data ? (
+            <Text style={typography.body}>Your spot: {addressQ.data}</Text>
+          ) : null}
+        </View>
+      ) : null}
+      {closerZone ? (
+        <Card style={{ gap: spacing.xs, borderColor: colors.primary, borderWidth: 1 }}>
+          <Text style={typography.label}>Closer zone detected</Text>
+          <Text style={typography.body}>
+            Your pin is {formatDistance(closerZone.meters)} from
+            {' '}{closerZone.zone.displayName} (Zone {closerZone.zone.code}).
+          </Text>
+          <Button
+            label={`Switch to ${closerZone.zone.displayName}`}
+            variant="secondary"
+            onPress={() =>
+              router.replace({
+                pathname: '/confirm',
+                params: { zoneId: closerZone.zone.id },
+              })
+            }
+          />
+        </Card>
+      ) : null}
 
       {vehicles.length === 0 ? (
         <Card style={{ gap: spacing.sm }}>

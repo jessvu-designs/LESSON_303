@@ -39,3 +39,24 @@ export function formatDistance(meters: number): string {
   const km = meters / 1000;
   return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
 }
+
+/**
+ * Best-effort reverse geocode via expo-location (uses the platform geocoder
+ * on iOS/Android — no API key needed). Returns null on web or on failure.
+ */
+export async function reverseGeocode(coords: Coords): Promise<string | null> {
+  try {
+    const results = await Location.reverseGeocodeAsync({
+      latitude: coords.lat,
+      longitude: coords.lng,
+    });
+    const first = results[0];
+    if (!first) return null;
+    // Prefer a "123 Main St" style; fall back to whatever pieces exist.
+    const street = [first.streetNumber, first.street].filter(Boolean).join(' ');
+    const locality = [first.city, first.region].filter(Boolean).join(', ');
+    return [street || first.name, locality].filter(Boolean).join(' · ') || null;
+  } catch {
+    return null;
+  }
+}

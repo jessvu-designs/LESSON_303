@@ -99,6 +99,13 @@ Permission is requested on the first successful start. Notifications are not ava
 
 Zone coordinates live in [the Prisma schema](apps/api/prisma/schema.prisma) (`latitude` / `longitude`) and are surfaced as `zone.geo: { lat, lng }` via the [shared types](packages/shared-types/src/index.ts). The map component degrades gracefully (renders nothing) if `react-native-maps` isn't linked or the zone has no coordinates.
 
+### Confirming the exact spot
+
+The Confirm screen renders a **draggable blue pin** on top of the zone preview. The pin starts at the user's GPS fix (or zone center as a fallback) and the driver can drag it to fine-tune the parking spot. Two things update live as the pin moves:
+
+1. **Reverse-geocoded address** — resolved via [expo-location's platform geocoder](apps/mobile/src/services/location.ts) (no API key required), bucketed at ~11 m precision so dragging doesn't spam the geocoder.
+2. **Closer-zone suggestion** — if the dragged pin is meaningfully closer (>25 m) to a different known zone, the screen surfaces a one-tap "Switch to {Zone}" card so the driver can't accidentally pay for the wrong zone when GPS lands between two.
+
 ## API endpoints
 
 All routes below require `Authorization: Bearer <token>` unless noted.
@@ -188,6 +195,5 @@ Domain models (User, Vehicle, ParkingZone, ParkingSession, Receipt, …) live in
 
 1. Replace the Seattle stub with a real upstream (signed requests, retries, idempotency keys, webhook for out-of-band status changes)
 2. Stripe webhooks (`payment_method.attached`, `payment_method.detached`) so other devices sync without a manual call
-3. Reverse-geocoding + draggable pin to confirm a custom parking spot when GPS lands between two zones
-4. Swap the in-process reminder scheduler for BullMQ delayed jobs so multi-node deploys don't double-fire
-5. Geofence-based provider routing on the device (auto-pick the right city/vendor as you cross zone boundaries)
+3. Swap the in-process reminder scheduler for BullMQ delayed jobs so multi-node deploys don't double-fire
+4. Geofence-based provider routing on the device (auto-pick the right city/vendor as you cross zone boundaries)

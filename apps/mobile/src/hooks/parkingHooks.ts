@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parkingApi } from '../services/parkingApi';
-import { getCurrentCoords } from '../services/location';
+import { type Coords, getCurrentCoords, reverseGeocode } from '../services/location';
 import {
   cancelSessionReminders,
   ensureNotificationPermission,
@@ -13,6 +13,22 @@ export function useCurrentLocation() {
     queryKey: ['location', 'current'],
     queryFn: getCurrentCoords,
     staleTime: 60_000,
+  });
+}
+
+/**
+ * Reverse-geocode a coordinate to a human-readable address. Bucketed at
+ * ~11 m precision so small drag jitter doesn't spam the platform geocoder.
+ */
+export function useReverseGeocode(coords?: Coords | null) {
+  const bucket = coords
+    ? `${coords.lat.toFixed(4)},${coords.lng.toFixed(4)}`
+    : null;
+  return useQuery({
+    queryKey: ['location', 'reverse', bucket],
+    queryFn: () => reverseGeocode(coords as Coords),
+    enabled: !!coords,
+    staleTime: 5 * 60_000,
   });
 }
 
