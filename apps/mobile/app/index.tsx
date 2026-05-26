@@ -1,13 +1,14 @@
 import { Link, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../src/auth/AuthProvider';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
 import { ErrorState, Loading } from '../src/components/Status';
+import { ZonesMap } from '../src/components/ZonesMap';
 import { useActiveSession, useCurrentLocation, useZones } from '../src/hooks/parkingHooks';
 import { distanceMeters, formatDistance } from '../src/services/location';
-import { colors, spacing, typography } from '../src/theme/tokens';
+import { colors, radii, spacing, typography } from '../src/theme/tokens';
 import { formatCountdown, formatMoney } from '../src/utils/format';
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
   const activeQ = useActiveSession();
   const active = activeQ.data ?? null;
   const [now, setNow] = useState(Date.now());
+  const [nearbyView, setNearbyView] = useState<'list' | 'map'>('list');
 
   useEffect(() => {
     if (!active) return;
@@ -93,22 +95,65 @@ export default function Home() {
 
       <View style={{ height: spacing.xl }} />
 
-      <Text style={typography.label}>Other zones nearby</Text>
-      {others.map(({ zone: z, meters }) => (
-        <Card key={z.id} style={{ marginTop: spacing.sm }}>
-          <Text style={typography.h2}>{z.displayName}</Text>
-          <Text style={typography.bodyMuted}>
-            Zone {z.code} · {formatMoney(z.rate.hourlyCents, z.rate.currency)}/hr
-            {Number.isFinite(meters) ? ` · ${formatDistance(meters)}` : ''}
+      <View style={styles.nearbyHeader}>
+        <Text style={typography.label}>Other zones nearby</Text>
+        <View style={styles.toggle} accessibilityRole="tablist">
+          {(['list', 'map'] as const).map((mode) => {
+            const selected = nearbyView === mode;
+            return (
+              <Pressable
+                key={mode}
+                onPress={() => setNearbyView(mode)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+                accessibilityLabel={`${mode} view`}
+                style={[styles.toggleBtn, selected && styles.toggleBtnSelected]}
+              >
+                <Text
+                  style={[
+                    styles.toggleText,
+                    selected && { color: colors.primaryText },
+                  ]}
+                >
+                  {mode === 'list' ? 'List' : 'Map'}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      {nearbyView === 'map' ? (
+        // Include the detected/closest zone too so the map shows the full picture.
+        <View style={{ marginTop: spacing.sm }}>
+          <ZonesMap
+            zones={sortedZones.map((s) => s.zone)}
+            userCoords={locQ.data ?? null}
+            onSelectZone={(z) =>
+              router.push({ pathname: '/confirm', params: { zoneId: z.id } })
+            }
+          />
+          <Text style={[typography.bodyMuted, { marginTop: spacing.sm }]}>
+            Tap a pin to confirm and start parking.
           </Text>
-          <Link
-            href={{ pathname: '/confirm', params: { zoneId: z.id } }}
-            style={{ color: colors.primary, marginTop: spacing.sm }}
-          >
-            Park here →
-          </Link>
-        </Card>
-      ))}
+        </View>
+      ) : (
+        others.map(({ zone: z, meters }) => (
+          <Card key={z.id} style={{ marginTop: spacing.sm }}>
+            <Text style={typography.h2}>{z.displayName}</Text>
+            <Text style={typography.bodyMuted}>
+              Zone {z.code} · {formatMoney(z.rate.hourlyCents, z.rate.currency)}/hr
+              {Number.isFinite(meters) ? ` · ${formatDistance(meters)}` : ''}
+            </Text>
+            <Link
+              href={{ pathname: '/confirm', params: { zoneId: z.id } }}
+              style={{ color: colors.primary, marginTop: spacing.sm }}
+            >
+              Park here →
+            </Link>
+          </Card>
+        ))
+      )}
 
       <View style={{ height: spacing.xl }} />
       <Button label="Wallet" variant="secondary" onPress={() => router.push('/wallet')} />
@@ -124,4 +169,24 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: { padding: spacing.lg, gap: spacing.sm },
+  nearbyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  toggle: {
+    flexDirection: 'row',
+    borderRadius: radii.pill,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 2,
+  },
+  toggleBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+  },
+  toggleBtnSelected: { backgroundColor: colors.primary },
+  toggleText: { color: colors.text, fontWeight: '600', fontSize: 14 },
 });

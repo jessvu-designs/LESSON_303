@@ -33,11 +33,13 @@ export function ZoneMap({
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('react-native-maps');
-    MapView = mod.default;
+    MapView = mod.default ?? mod.MapView;
     Marker = mod.Marker;
   } catch {
     return null;
   }
+  // On web, react-native-maps resolves to a shim with no real exports.
+  if (typeof MapView !== 'function' || typeof Marker !== 'function') return null;
 
   const draggable = !!onUserCoordsChange;
 
