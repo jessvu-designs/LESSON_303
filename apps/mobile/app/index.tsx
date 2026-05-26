@@ -233,7 +233,7 @@ export default function Home() {
             </Text>
             <Link
               href={{ pathname: '/confirm', params: { zoneId: z.id } }}
-              style={{ color: colors.link, marginTop: spacing.sm }}
+              style={{ color: colors.link, marginTop: spacing.sm, alignSelf: 'flex-end' }}
             >
               Park here →
             </Link>
@@ -376,6 +376,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  nearbyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   toggle: {
     flexDirection: 'row',

@@ -48,12 +48,13 @@ function AuthGate({ children }: { children: React.ReactElement | React.ReactElem
   return <>{children}</>;
 }
 
-// On web desktop, constrain the app to a phone-sized window (iPhone 14/15
-// logical resolution: 390 x 844) centered on a dark backdrop so it always
-// looks like the mobile app. On native, this is a passthrough.
-const PHONE_WIDTH = 390;
-const PHONE_HEIGHT = 844;
-const PHONE_RADIUS = 44;
+// On web desktop, constrain the app to a responsive mobile-sized column
+// centered on a dark backdrop. The column fills the available viewport and
+// shrinks naturally on smaller windows (real mobile browsers, narrow desktop
+// windows), capped at mobile max width × height. On native, this is a
+// passthrough.
+const PHONE_MAX_WIDTH = 480;
+const PHONE_MAX_HEIGHT = 900;
 const BACKDROP_COLOR = '#0A0A0A';
 
 function MobileFrame({ children }: { children: React.ReactNode }) {
@@ -81,11 +82,10 @@ function MobileFrame({ children }: { children: React.ReactNode }) {
         style={{
           width: '100%',
           height: '100%',
-          maxWidth: PHONE_WIDTH,
-          maxHeight: PHONE_HEIGHT,
+          maxWidth: PHONE_MAX_WIDTH,
+          maxHeight: PHONE_MAX_HEIGHT,
           backgroundColor: colors.bg,
           overflow: 'hidden',
-          borderRadius: PHONE_RADIUS,
           ...(Platform.OS === 'web'
             ? ({ boxShadow: '0 10px 60px rgba(0,0,0,0.7)' } as object)
             : {}),
