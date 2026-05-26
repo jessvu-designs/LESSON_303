@@ -38,6 +38,7 @@ export async function scheduleSessionReminders(session: ParkingSession): Promise
 
   const expiresAt = new Date(session.expiresAt).getTime();
   const now = Date.now();
+  const remaining = expiresAt - now;
 
   const reminders: Array<{ minutesBefore: number; title: string; body: string }> = [
     {
@@ -59,7 +60,19 @@ export async function scheduleSessionReminders(session: ParkingSession): Promise
 
   for (const r of reminders) {
     const triggerTime = expiresAt - r.minutesBefore * 60_000;
-    if (triggerTime <= now + 1000) continue; // skip past/imminent
+    if (triggerTime <= now + 1000) {
+      if (r.minutesBefore === 15 && remaining > 0 && remaining < 15 * 60_000) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: r.title,
+            body: r.body,
+            data: { [SESSION_ID_KEY]: session.id },
+          },
+          trigger: null,
+        });
+      }
+      continue;
+    }
     const seconds = Math.round((triggerTime - now) / 1000);
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -67,10 +80,7 @@ export async function scheduleSessionReminders(session: ParkingSession): Promise
         body: r.body,
         data: { [SESSION_ID_KEY]: session.id },
       },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds,
-      },
+      trigger: { seconds },
     });
   }
 }

@@ -42,6 +42,8 @@ export default function ActiveSession() {
   const remaining = new Date(session.expiresAt).getTime() - now;
   const expiringSoon = remaining > 0 && remaining < 15 * 60 * 1000;
   const expired = remaining <= 0;
+  const shouldShowExtendParking = expired || expiringSoon;
+  const extendLabel = shouldShowExtendParking ? 'Extend Parking' : 'Extend time';
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -52,7 +54,7 @@ export default function ActiveSession() {
         <Text
           style={[
             typography.display,
-            { color: expired ? colors.danger : expiringSoon ? colors.warning : colors.text },
+            { color: shouldShowExtendParking ? colors.danger : colors.text },
           ]}
           accessibilityLabel={`Time remaining ${formatCountdown(remaining)}`}
         >
@@ -76,7 +78,8 @@ export default function ActiveSession() {
       </Card>
 
       <Button
-        label="Extend time"
+        label={extendLabel}
+        variant={shouldShowExtendParking ? 'danger' : 'primary'}
         onPress={() => router.push('/extend')}
         accessibilityHint="Add more minutes to your parking session"
       />

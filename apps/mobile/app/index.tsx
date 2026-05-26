@@ -63,6 +63,10 @@ export default function Home() {
   const detected = detectedEntry?.zone;
   const detectedDistance = detectedEntry?.meters;
   const others = sortedZones.slice(1);
+  const activeRemainingMs = active ? new Date(active.expiresAt).getTime() - now : null;
+  const activeExpired = activeRemainingMs != null && activeRemainingMs <= 0;
+  const activeExpiringSoon = activeRemainingMs != null && activeRemainingMs > 0 && activeRemainingMs < 15 * 60 * 1000;
+  const shouldShowExtendParking = activeExpired || activeExpiringSoon;
 
   return (
     <>
@@ -119,7 +123,7 @@ export default function Home() {
       {active ? (
         <Card style={{ gap: spacing.sm }}>
           <Text style={typography.label}>Active session</Text>
-          <Text style={typography.display}>
+          <Text style={[typography.display, { color: shouldShowExtendParking ? colors.danger : colors.text }]}>
             {formatCountdown(new Date(active.expiresAt).getTime() - now)}
           </Text>
           {activeZoneQ.data ? (
@@ -131,7 +135,11 @@ export default function Home() {
           <Text style={typography.bodyMuted}>
             Paid {formatMoney(active.totalPaidCents, active.currency)}
           </Text>
-          <Button label="View session" onPress={() => router.push('/session')} />
+          <Button
+            label={shouldShowExtendParking ? 'Extend Parking' : 'View session'}
+            variant={shouldShowExtendParking ? 'danger' : 'primary'}
+            onPress={() => router.push(shouldShowExtendParking ? '/extend' : '/session')}
+          />
         </Card>
       ) : detected ? (
         <Card style={{ gap: spacing.sm }}>

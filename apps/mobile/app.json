@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Universal Parking",
+    "name": "PARKER",
     "slug": "universal-parking",
     "scheme": "parking",
     "version": "0.0.1",
@@ -10,7 +10,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.universalparking.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "We use your location to find the parking zone you're in and show nearby zones."
+        "NSLocationWhenInUseUsageDescription": "Allow PARKER to use your location to find your parking zone and show nearby zones."
       }
     },
     "android": {
@@ -24,7 +24,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Universal Parking to use your location to find nearby zones."
+          "locationAlwaysAndWhenInUsePermission": "Allow PARKER to use your location to find nearby zones."
         }
       ]
     ],

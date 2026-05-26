@@ -59,12 +59,12 @@ export default function ConfirmParking() {
 
   const effectivePin: Coords | null = pinCoords ?? locQ.data ?? null;
   const distance =
-    effectivePin && zone.geo ? distanceMeters(effectivePin, zone.geo) : null;
+    effectivePin && zone?.geo ? distanceMeters(effectivePin, zone.geo) : null;
 
   const closerZone = useMemo(() => {
-    if (!effectivePin || !zone.geo || !zonesQ.data) return null;
+    if (!effectivePin || !zone?.geo || !zonesQ.data) return null;
     const here = distanceMeters(effectivePin, zone.geo);
-    let best: { zone: typeof zone; meters: number } | null = null;
+    let best: { zone: NonNullable<typeof zone>; meters: number } | null = null;
     for (const z of zonesQ.data) {
       if (z.id === zone.id || !z.geo) continue;
       const m = distanceMeters(effectivePin, z.geo);

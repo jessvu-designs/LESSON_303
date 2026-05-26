@@ -27,7 +27,7 @@ export function Dropdown({ label, value, options, onChange, suffix = '' }: Dropd
           <Text style={styles.label}>{label}</Text>
           <Text style={styles.value}>{displayText}</Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
+        <Text style={styles.chevron}>⌄</Text>
       </Pressable>
 
       <Modal
@@ -37,9 +37,14 @@ export function Dropdown({ label, value, options, onChange, suffix = '' }: Dropd
         onRequestClose={() => setOpen(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <Pressable style={styles.menu} onPress={() => {}}>
+          <View style={styles.menu}>
             <Text style={styles.menuLabel}>{label}</Text>
-            <ScrollView style={styles.optionsList}>
+            <ScrollView
+              style={styles.optionsList}
+              contentContainerStyle={styles.optionsListContent}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator
+            >
               {options.map((opt) => (
                 <Pressable
                   key={opt}
@@ -63,7 +68,7 @@ export function Dropdown({ label, value, options, onChange, suffix = '' }: Dropd
                 </Pressable>
               ))}
             </ScrollView>
-          </Pressable>
+          </View>
         </Pressable>
       </Modal>
     </>
@@ -123,6 +128,10 @@ const styles = StyleSheet.create({
   },
   optionsList: {
     maxHeight: 300,
+    alignSelf: 'stretch',
+  },
+  optionsListContent: {
+    paddingBottom: spacing.sm,
   },
   option: {
     paddingHorizontal: spacing.md,
@@ -131,8 +140,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   optionSelected: {
-    backgroundColor: colors.primary,
-    opacity: 0.2,
+    backgroundColor: 'rgba(59,130,246,0.28)',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
   },
   optionText: {
     fontSize: 16,
@@ -140,6 +150,6 @@ const styles = StyleSheet.create({
   },
   optionTextSelected: {
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.text,
   },
 });

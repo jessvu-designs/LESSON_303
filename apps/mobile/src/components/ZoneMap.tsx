@@ -33,6 +33,16 @@ export function ZoneMap({
 }: Props) {
   if (!zone.geo) return null;
 
+  if (Platform.OS === 'web') {
+    return (
+      <StaticZoneMapFallback
+        zone={zone}
+        userCoords={userCoords ?? null}
+        height={height}
+      />
+    );
+  }
+
   let MapView: any;
   let Marker: any;
   try {
@@ -61,19 +71,21 @@ export function ZoneMap({
   }
 
   const draggable = !!onUserCoordsChange;
+  const center = userCoords ?? zone.geo;
+  const latitudeDelta = userCoords ? 0.0025 : 0.004;
+  const longitudeDelta = userCoords ? 0.0025 : 0.004;
 
   return (
     <View style={[styles.wrap, { height }]}>
       <MapView
         style={StyleSheet.absoluteFill}
-        // Allow gestures when the user can drag the pin so they can pan/zoom
-        // to position it accurately.
-        pointerEvents={draggable ? 'auto' : 'none'}
+        // Keep the map interactive so the user can pinch to zoom and pan.
+        pointerEvents="auto"
         initialRegion={{
-          latitude: (userCoords ?? zone.geo).lat,
-          longitude: (userCoords ?? zone.geo).lng,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
+          latitude: center.lat,
+          longitude: center.lng,
+          latitudeDelta,
+          longitudeDelta,
         }}
       >
         <Marker
@@ -114,6 +126,54 @@ function projectPoint(
   };
 }
 
+const WEB_TILE_SIZE = 256;
+const WEB_TILE_GRID = 3;
+const WEB_TILE_CANVAS = WEB_TILE_SIZE * WEB_TILE_GRID;
+
+function latLngToWorldPixel(lat: number, lng: number, zoom: number) {
+  const scale = WEB_TILE_SIZE * 2 ** zoom;
+  const x = ((lng + 180) / 360) * scale;
+  const latRad = (lat * Math.PI) / 180;
+  const y =
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * scale;
+  return { x, y };
+}
+
+function webZoomForZone(delta = 0.01) {
+  return delta > 0.02 ? 14 : 15;
+}
+
+function renderWebTileGrid(center: { lat: number; lng: number }, zoom: number) {
+  const centerPx = latLngToWorldPixel(center.lat, center.lng, zoom);
+  const centerTileX = Math.floor(centerPx.x / WEB_TILE_SIZE);
+  const centerTileY = Math.floor(centerPx.y / WEB_TILE_SIZE);
+  const offsetX = centerPx.x - centerTileX * WEB_TILE_SIZE;
+  const offsetY = centerPx.y - centerTileY * WEB_TILE_SIZE;
+
+  return Array.from({ length: WEB_TILE_GRID }, (_, y) =>
+    Array.from({ length: WEB_TILE_GRID }, (_, x) => {
+      const tileX = centerTileX + x - 1;
+      const tileY = centerTileY + y - 1;
+      const key = `${zoom}-${tileX}-${tileY}`;
+      const uri = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+      return (
+        <Image
+          key={key}
+          source={{ uri }}
+          style={[
+            styles.webTile,
+            {
+              left: x * WEB_TILE_SIZE + WEB_TILE_SIZE / 2 - offsetX,
+              top: y * WEB_TILE_SIZE + WEB_TILE_SIZE / 2 - offsetY,
+            },
+          ]}
+          resizeMode="cover"
+        />
+      );
+    }),
+  ).flat();
+}
+
 function latLngToTile(lat: number, lng: number, zoom: number) {
   const n = 2 ** zoom;
   const x = Math.floor(((lng + 180) / 360) * n);
@@ -140,25 +200,44 @@ function StaticZoneMapFallback({
   height: number;
 }) {
   const center = userCoords ?? zone.geo!;
-  const tileUrl = buildTileUrl(center);
+  const zoom = webZoomForZone(userCoords ? 0.005 : 0.01);
   const [tileFailed, setTileFailed] = useState(false);
-  const useSchematic = Platform.OS !== 'web' || tileFailed;
+  const useSchematic = tileFailed;
+  const zonePosition = projectPoint(zone.geo!.lat, zone.geo!.lng, center);
+  const userPosition = userCoords ? projectPoint(userCoords.lat, userCoords.lng, center) : null;
+  const webCenterPx = latLngToWorldPixel(center.lat, center.lng, zoom);
+  const zonePx = latLngToWorldPixel(zone.geo!.lat, zone.geo!.lng, zoom);
+
+  const webZonePosition = {
+    left: WEB_TILE_CANVAS / 2 + (zonePx.x - webCenterPx.x),
+    top: WEB_TILE_CANVAS / 2 + (zonePx.y - webCenterPx.y),
+  };
+  const webUserPosition = userCoords
+    ? {
+        left: WEB_TILE_CANVAS / 2 + (latLngToWorldPixel(userCoords.lat, userCoords.lng, zoom).x - webCenterPx.x),
+        top: WEB_TILE_CANVAS / 2 + (latLngToWorldPixel(userCoords.lat, userCoords.lng, zoom).y - webCenterPx.y),
+      }
+    : null;
 
   return (
     <View style={{ gap: 8 }}>
       <View style={[styles.wrap, { height }]}> 
         {!useSchematic ? (
-          <Image
-            source={{ uri: tileUrl }}
-            style={StyleSheet.absoluteFill}
-            resizeMode="cover"
-            onError={() => setTileFailed(true)}
-          />
+          <View style={styles.webMapCanvas}>
+            {renderWebTileGrid(center, zoom)}
+            <View style={[styles.webPinGroup, webZonePosition]}>
+              <View style={[styles.pin, styles.pinZone, styles.webPin]} />
+              <View style={styles.pinLabel}>
+                <Text style={styles.pinLabelText}>Zone {zone.code}</Text>
+              </View>
+            </View>
+            {webUserPosition ? <View style={[styles.pin, styles.pinUser, styles.webPin, webUserPosition]} /> : null}
+          </View>
         ) : (
           <View style={styles.fallbackMapBg}>
-            <View style={[styles.pin, styles.pinZone, projectPoint(zone.geo!.lat, zone.geo!.lng, center)]} />
+            <View style={[styles.pin, styles.pinZone, zonePosition]} />
             {userCoords ? (
-              <View style={[styles.pin, styles.pinUser, projectPoint(userCoords.lat, userCoords.lng, center)]} />
+              <View style={[styles.pin, styles.pinUser, userPosition ?? {}]} />
             ) : null}
             <Text style={styles.fallbackLegend}>
               {tileFailed ? 'Map preview (fallback)' : 'Schematic map preview'}
@@ -190,6 +269,51 @@ const styles = StyleSheet.create({
   fallbackMapBg: {
     flex: 1,
     backgroundColor: '#06122b',
+  },
+  webMapCanvas: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    width: WEB_TILE_CANVAS,
+    height: WEB_TILE_CANVAS,
+    marginLeft: -WEB_TILE_CANVAS / 2,
+    marginTop: -WEB_TILE_CANVAS / 2,
+    backgroundColor: '#08142d',
+    overflow: 'hidden',
+  },
+  webTile: {
+    position: 'absolute',
+    width: WEB_TILE_SIZE,
+    height: WEB_TILE_SIZE,
+  },
+  webPin: {
+    position: 'absolute',
+    marginLeft: -6,
+    marginTop: -6,
+  },
+  webPinGroup: {
+    position: 'absolute',
+    alignItems: 'center',
+  },
+  pinLabel: {
+    position: 'absolute',
+    left: 10,
+    top: -28,
+    backgroundColor: 'rgba(2, 6, 23, 0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
+    borderRadius: radii.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  pinLabelText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
   },
   pin: {
     position: 'absolute',
