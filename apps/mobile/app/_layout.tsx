@@ -59,42 +59,38 @@ const BACKDROP_COLOR = '#0A0A0A';
 
 function MobileFrame({ children }: { children: React.ReactNode }) {
   if (Platform.OS !== 'web') return <OverlayHost>{children}</OverlayHost>;
-  // Inject global CSS once so html/body fill the viewport with the backdrop.
+  // Inject global CSS that enforces the mobile frame purely via CSS — this
+  // runs regardless of React mount timing / SSR quirks on the Vercel build.
+  // The Expo Router web build mounts the app inside #root, so we constrain
+  // #root directly to a mobile-sized centered column.
   if (typeof document !== 'undefined' && !document.getElementById('mobile-frame-style')) {
     const style = document.createElement('style');
     style.id = 'mobile-frame-style';
     style.innerHTML = `
-      html, body, #root { height: 100%; margin: 0; background: ${BACKDROP_COLOR}; }
-      body { overflow: hidden; }
+      html, body { height: 100%; margin: 0; background: ${BACKDROP_COLOR}; overflow: hidden; }
+      #root {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+        background: ${BACKDROP_COLOR};
+      }
+      #root > * {
+        width: 100%;
+        height: 100%;
+        max-width: ${PHONE_MAX_WIDTH}px;
+        max-height: ${PHONE_MAX_HEIGHT}px;
+        background: ${colors.bg};
+        overflow: hidden;
+        box-shadow: 0 10px 60px rgba(0,0,0,0.7);
+        display: flex;
+        flex-direction: column;
+      }
     `;
     document.head.appendChild(style);
   }
-  return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: BACKDROP_COLOR,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <View
-        style={{
-          width: '100%',
-          height: '100%',
-          maxWidth: PHONE_MAX_WIDTH,
-          maxHeight: PHONE_MAX_HEIGHT,
-          backgroundColor: colors.bg,
-          overflow: 'hidden',
-          ...(Platform.OS === 'web'
-            ? ({ boxShadow: '0 10px 60px rgba(0,0,0,0.7)' } as object)
-            : {}),
-        }}
-      >
-        <OverlayHost>{children}</OverlayHost>
-      </View>
-    </View>
-  );
+  return <OverlayHost>{children}</OverlayHost>;
 }
 
 export default function RootLayout() {
