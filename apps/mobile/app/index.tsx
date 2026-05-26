@@ -1,6 +1,6 @@
-import { Link, router } from 'expo-router';
+import { Link, Stack, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../src/auth/AuthProvider';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
@@ -19,6 +19,7 @@ export default function Home() {
   const active = activeQ.data ?? null;
   const [now, setNow] = useState(Date.now());
   const [nearbyView, setNearbyView] = useState<'list' | 'map'>('list');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!active) return;
@@ -54,8 +55,47 @@ export default function Home() {
   const others = sortedZones.slice(1);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={typography.h1}>Where are you parking?</Text>
+    <>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable
+              onPress={() => setMenuOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Open menu"
+              hitSlop={12}
+              style={styles.headerMenuTrigger}
+            >
+              <Text style={styles.headerMenuTriggerText}>Account</Text>
+            </Pressable>
+          ),
+        }}
+      />
+      <Modal
+        animationType="fade"
+        transparent
+        visible={menuOpen}
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
+          <Pressable style={styles.menuCard} onPress={() => {}}>
+            <Text style={styles.menuEmail}>Signed in as {user?.email}</Text>
+            <Pressable onPress={() => { setMenuOpen(false); router.push('/wallet'); }} style={styles.menuItem}>
+              <Text style={styles.menuItemText}>Wallet</Text>
+            </Pressable>
+            <Pressable onPress={() => { setMenuOpen(false); router.push('/vehicles'); }} style={styles.menuItem}>
+              <Text style={styles.menuItemText}>Vehicles</Text>
+            </Pressable>
+            <Pressable onPress={() => { setMenuOpen(false); router.push('/history'); }} style={styles.menuItem}>
+              <Text style={styles.menuItemText}>Receipts & history</Text>
+            </Pressable>
+            <Pressable onPress={() => { setMenuOpen(false); signOut(); }} style={styles.menuItem}>
+              <Text style={[styles.menuItemText, { color: '#fca5a5' }]}>Sign out</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+      <ScrollView contentContainerStyle={styles.container}>
       <Text style={[typography.bodyMuted, { marginBottom: spacing.lg }]}>
         {locQ.data
           ? 'We use your location to find the closest zone. You can always confirm before paying.'
@@ -156,19 +196,63 @@ export default function Home() {
       )}
 
       <View style={{ height: spacing.xl }} />
-      <Button label="Wallet" variant="secondary" onPress={() => router.push('/wallet')} />
-      <Button label="Vehicles" variant="secondary" onPress={() => router.push('/vehicles')} />
-      <Button label="Receipts & history" variant="secondary" onPress={() => router.push('/history')} />
-      <Text style={[typography.bodyMuted, { textAlign: 'center', marginTop: spacing.lg }]}>
-        Signed in as {user?.email}
-      </Text>
-      <Button label="Sign out" variant="secondary" onPress={signOut} />
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: { padding: spacing.lg, gap: spacing.sm },
+  headerMenuTrigger: {
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    marginRight: 2,
+  },
+  headerMenuTriggerText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(2,6,23,0.2)',
+    paddingTop: 92,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'flex-end',
+  },
+  menuCard: {
+    width: 230,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderTopRightRadius: 10,
+    padding: spacing.sm,
+    gap: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 12,
+  },
+  menuEmail: {
+    color: colors.muted,
+    fontSize: 12,
+    marginBottom: 4,
+    paddingHorizontal: 8,
+  },
+  menuItem: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  menuItemText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
   nearbyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
