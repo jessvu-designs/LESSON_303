@@ -1,6 +1,7 @@
 import { Link, Stack, router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../src/auth/AuthProvider';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
@@ -21,7 +22,11 @@ export default function Home() {
   const [now, setNow] = useState(Date.now());
   const [nearbyView, setNearbyView] = useState<'list' | 'map'>('list');
   const [menuOpen, setMenuOpen] = useState(false);
-  const drawerAnimRef = useRef(new Animated.Value(Dimensions.get('window').width)).current;
+  // Drawer is 230px wide; animate by that distance so it slides relative to
+  // the phone frame (not the browser window). Modal is intentionally avoided
+  // because on web it portals outside the MobileFrame.
+  const DRAWER_WIDTH = 230;
+  const drawerAnimRef = useRef(new Animated.Value(DRAWER_WIDTH)).current;
 
   useEffect(() => {
     if (!active) return;
@@ -31,7 +36,7 @@ export default function Home() {
 
   useEffect(() => {
     Animated.timing(drawerAnimRef, {
-      toValue: menuOpen ? 0 : Dimensions.get('window').width,
+      toValue: menuOpen ? 0 : DRAWER_WIDTH,
       duration: 300,
       useNativeDriver: false,
     }).start();
@@ -69,57 +74,57 @@ export default function Home() {
   const shouldShowExtendParking = activeExpired || activeExpiringSoon;
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <Pressable
-              onPress={() => setMenuOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Open menu"
-              hitSlop={12}
-              style={styles.headerMenuTrigger}
-            >
-              <Text style={styles.headerMenuTriggerText}>Account</Text>
-            </Pressable>
-          ),
-        }}
-      />
-      <Modal
-        animationType="none"
-        transparent
-        visible={menuOpen}
-        onRequestClose={() => setMenuOpen(false)}
-      >
-        <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
-          <Animated.View style={[styles.menuCard, { transform: [{ translateX: drawerAnimRef }] }]}>
-            <Pressable onPress={() => {}} style={{ flex: 1 }}>
-              <View style={styles.menuContent}>
-                <View style={styles.menuTop}> 
-                  <Text style={styles.menuSectionTitle}>Account</Text>
-                  <View style={styles.menuSectionDivider} />
-                  <Pressable onPress={() => { setMenuOpen(false); router.push('/wallet'); }} style={styles.menuItem}>
-                    <Text style={styles.menuItemText}>Wallet</Text>
-                  </Pressable>
-                  <Pressable onPress={() => { setMenuOpen(false); router.push('/vehicles'); }} style={styles.menuItem}>
-                    <Text style={styles.menuItemText}>Vehicles</Text>
-                  </Pressable>
-                  <Pressable onPress={() => { setMenuOpen(false); router.push('/history'); }} style={styles.menuItem}>
-                    <Text style={styles.menuItemText}>Receipts & history</Text>
-                  </Pressable>
-                </View>
-                <View style={styles.menuFooter}>
-                  <View style={styles.menuDivider} />
-                  <Pressable onPress={() => { setMenuOpen(false); signOut(); }} style={styles.menuItem}>
-                    <Text style={[styles.menuItemText, styles.signOutText]}>Sign out</Text>
-                  </Pressable>
-                  <Text style={styles.menuEmail}>Signed in as {user?.email}</Text>
-                </View>
-              </View>
-            </Pressable>
-          </Animated.View>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Hide the navigation header on home so we can render an inline header
+          inside the same view tree as the overlay. This lets the drawer
+          extend over the header and fill the full phone height. */}
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <View style={styles.inlineHeader}>
+        <View style={styles.inlineHeaderTitle}>
+          <MaterialCommunityIcons name="car-outline" size={19} color={colors.text} />
+          <Text style={styles.inlineHeaderTitleText}>PARKER</Text>
+        </View>
+        <Pressable
+          onPress={() => setMenuOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Open menu"
+          hitSlop={12}
+          style={styles.headerMenuTrigger}
+        >
+          <Text style={styles.headerMenuTriggerText}>Account</Text>
         </Pressable>
-      </Modal>
+      </View>
+
+      {menuOpen ? (
+        <View style={styles.menuOverlay} pointerEvents="box-none">
+          <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)} />
+          <Animated.View style={[styles.menuCard, { transform: [{ translateX: drawerAnimRef }] }]}>
+            <View style={styles.menuContent}>
+              <View style={styles.menuTop}>
+                <Text style={styles.menuSectionTitle}>Account</Text>
+                <View style={styles.menuSectionDivider} />
+                <Pressable onPress={() => { setMenuOpen(false); router.push('/wallet'); }} style={styles.menuItem}>
+                  <Text style={styles.menuItemText}>Wallet</Text>
+                </Pressable>
+                <Pressable onPress={() => { setMenuOpen(false); router.push('/vehicles'); }} style={styles.menuItem}>
+                  <Text style={styles.menuItemText}>Vehicles</Text>
+                </Pressable>
+                <Pressable onPress={() => { setMenuOpen(false); router.push('/history'); }} style={styles.menuItem}>
+                  <Text style={styles.menuItemText}>Receipts & history</Text>
+                </Pressable>
+              </View>
+              <View style={styles.menuFooter}>
+                <View style={styles.menuDivider} />
+                <Pressable onPress={() => { setMenuOpen(false); signOut(); }} style={styles.menuItem}>
+                  <Text style={[styles.menuItemText, styles.signOutText]}>Sign out</Text>
+                </Pressable>
+                <Text style={styles.menuEmail}>Signed in as {user?.email}</Text>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+      ) : null}
       <ScrollView contentContainerStyle={styles.container}>
       <Text style={[typography.bodyMuted, { marginBottom: spacing.lg }]}>
         {locQ.data
@@ -238,7 +243,7 @@ export default function Home() {
 
       <View style={{ height: spacing.xl }} />
       </ScrollView>
-    </>
+    </View>
   );
 }
 
@@ -262,8 +267,39 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.4,
   },
+  menuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  inlineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    minHeight: 56,
+    backgroundColor: colors.bg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  inlineHeaderTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  inlineHeaderTitleText: {
+    color: colors.text,
+    fontWeight: '700',
+    fontSize: 17,
+    letterSpacing: 0.8,
+  },
   menuBackdrop: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(2,6,23,0.2)',
   },
   menuCard: {

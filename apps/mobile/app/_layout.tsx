@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
 import { Loading } from '../src/components/Status';
+import { OverlayHost } from '../src/components/OverlayHost';
 import { STRIPE_ENABLED, STRIPE_MERCHANT_ID, STRIPE_PUBLISHABLE_KEY } from '../src/config';
 import { queryClient } from '../src/services/queryClient';
 import { colors } from '../src/theme/tokens';
@@ -56,7 +57,7 @@ const PHONE_RADIUS = 44;
 const BACKDROP_COLOR = '#0A0A0A';
 
 function MobileFrame({ children }: { children: React.ReactNode }) {
-  if (Platform.OS !== 'web') return <>{children}</>;
+  if (Platform.OS !== 'web') return <OverlayHost>{children}</OverlayHost>;
   // Inject global CSS once so html/body fill the viewport with the backdrop.
   if (typeof document !== 'undefined' && !document.getElementById('mobile-frame-style')) {
     const style = document.createElement('style');
@@ -90,7 +91,7 @@ function MobileFrame({ children }: { children: React.ReactNode }) {
             : {}),
         }}
       >
-        {children}
+        <OverlayHost>{children}</OverlayHost>
       </View>
     </View>
   );
