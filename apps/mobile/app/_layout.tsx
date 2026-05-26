@@ -1,0 +1,70 @@
+import { Redirect, Stack, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
+import { Loading } from '../src/components/Status';
+import { STRIPE_ENABLED, STRIPE_MERCHANT_ID, STRIPE_PUBLISHABLE_KEY } from '../src/config';
+import { queryClient } from '../src/services/queryClient';
+import { colors } from '../src/theme/tokens';
+
+// Optional Stripe wrapper. If the native module isn't linked (e.g. plain
+// Expo Go), this component renders children unchanged.
+function MaybeStripeProvider({ children }: { children: React.ReactNode }) {
+  if (!STRIPE_ENABLED) return <>{children}</>;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { StripeProvider } = require('@stripe/stripe-react-native') as typeof import('@stripe/stripe-react-native');
+    return (
+      <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY} merchantIdentifier={STRIPE_MERCHANT_ID}>
+        {children}
+      </StripeProvider>
+    );
+  } catch {
+    return <>{children}</>;
+  }
+}
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { loading, token } = useAuth();
+  const segments = useSegments();
+  const onLogin = segments[0] === 'login';
+
+  if (loading) return <Loading />;
+  if (!token && !onLogin) return <Redirect href="/login" />;
+  if (token && onLogin) return <Redirect href="/" />;
+  return <>{children}</>;
+}
+
+export default function RootLayout() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <MaybeStripeProvider>
+          <SafeAreaProvider>
+            <StatusBar style="light" />
+            <AuthGate>
+              <Stack
+                screenOptions={{
+                  headerStyle: { backgroundColor: colors.bg },
+                  headerTintColor: colors.text,
+                  headerTitleStyle: { fontWeight: '600' },
+                  contentStyle: { backgroundColor: colors.bg },
+                }}
+              >
+                <Stack.Screen name="index" options={{ title: 'Park' }} />
+                <Stack.Screen name="confirm" options={{ title: 'Confirm Parking' }} />
+                <Stack.Screen name="session" options={{ title: 'Active Session' }} />
+                <Stack.Screen name="extend" options={{ title: 'Extend Time', presentation: 'modal' }} />
+                <Stack.Screen name="history" options={{ title: 'History' }} />
+                <Stack.Screen name="wallet" options={{ title: 'Wallet' }} />
+                <Stack.Screen name="vehicles" options={{ title: 'Vehicles' }} />
+                <Stack.Screen name="login" options={{ headerShown: false }} />
+              </Stack>
+            </AuthGate>
+          </SafeAreaProvider>
+        </MaybeStripeProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}

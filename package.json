@@ -1,0 +1,17 @@
+{
+  "name": "universal-parking",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Universal street parking app — monorepo (mobile + API + shared types)",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "mobile": "pnpm --filter @parking/mobile start",
+    "api": "pnpm --filter @parking/api start:dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
