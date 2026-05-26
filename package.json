@@ -11,6 +11,9 @@
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   },
+  "prisma": {
+    "schema": "apps/api/prisma/schema.prisma"
+  },
   "devDependencies": {
     "typescript": "^5.4.5"
   }
