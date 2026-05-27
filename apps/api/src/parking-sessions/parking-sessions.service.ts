@@ -113,7 +113,18 @@ export class ParkingSessionsService {
   async getActiveForUser(userId: string): Promise<ParkingSession | undefined> {
     for (const c of this.providers.all()) {
       const s = await c.getActiveSessionForUser(userId);
-      if (s) return s;
+      if (!s) continue;
+      // Lazily expire stale sessions so a fresh sign-in never surfaces an
+      // active session whose timer has already run out (the reminder
+      // scheduler may not have ticked yet, or may be stopped in dev).
+      if (new Date(s.expiresAt).getTime() <= Date.now()) {
+        await this.prisma.parkingSession.update({
+          where: { id: s.id },
+          data: { status: 'expired' },
+        }).catch(() => undefined);
+        continue;
+      }
+      return s;
     }
     return undefined;
   }

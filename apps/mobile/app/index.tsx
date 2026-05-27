@@ -1,4 +1,4 @@
-import { Link, Stack, router } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -134,8 +134,15 @@ export default function Home() {
 
       {active ? (
         <Card style={styles.activeCard}>
-          <Text style={styles.activePaid}>Paid {formatMoney(active.totalPaidCents, active.currency)}</Text>
-          <Text style={typography.label}>Parking active</Text>
+          <View style={styles.activeTopRow}>
+            <Text style={typography.label}>Parking active</Text>
+            <View style={styles.activeTopRight}>
+              {activeZoneQ.data ? (
+                <Text style={styles.activeZoneCode}>Zone {activeZoneQ.data.code}</Text>
+              ) : null}
+              <Text style={styles.activePaid}>Paid {formatMoney(active.totalPaidCents, active.currency)}</Text>
+            </View>
+          </View>
           <Text style={[typography.display, { color: shouldShowExtendParking ? colors.danger : colors.text }]}>
             {formatCountdown(new Date(active.expiresAt).getTime() - now)}
           </Text>
@@ -225,19 +232,24 @@ export default function Home() {
         </Card>
       ) : (
         others.map(({ zone: z, meters }) => (
-          <Card key={z.id} style={{ marginTop: spacing.sm }}>
-            <Text style={typography.h2}>{z.displayName}</Text>
-            <Text style={typography.bodyMuted}>
-              Zone {z.code} · {formatMoney(z.rate.hourlyCents, z.rate.currency)}/hr · 2HR limit enforced
-              {Number.isFinite(meters) ? ` · ${formatDistance(meters)}` : ''}
-            </Text>
-            <Link
-              href={{ pathname: '/confirm', params: { zoneId: z.id } }}
-              style={{ color: colors.link, marginTop: spacing.sm, alignSelf: 'flex-end' }}
-            >
-              Park here →
-            </Link>
-          </Card>
+          <Pressable
+            key={z.id}
+            onPress={() => router.push({ pathname: '/confirm', params: { zoneId: z.id } })}
+            accessibilityRole="button"
+            accessibilityLabel={`Park at ${z.displayName}, zone ${z.code}, ${formatMoney(z.rate.hourlyCents, z.rate.currency)} per hour`}
+            style={({ pressed }) => ({ marginTop: spacing.sm, opacity: pressed ? 0.85 : 1 })}
+          >
+            <Card>
+              <Text style={typography.h2}>{z.displayName}</Text>
+              <Text style={typography.bodyMuted}>
+                Zone {z.code} · {formatMoney(z.rate.hourlyCents, z.rate.currency)}/hr · 2HR limit enforced
+                {Number.isFinite(meters) ? ` · ${formatDistance(meters)}` : ''}
+              </Text>
+              <Text style={{ color: colors.link, marginTop: spacing.sm, alignSelf: 'flex-end', fontWeight: '600' }}>
+                Park here →
+              </Text>
+            </Card>
+          </Pressable>
         ))
       )}
 
@@ -399,12 +411,22 @@ const styles = StyleSheet.create({
   toggleText: { color: colors.text, fontWeight: '600', fontSize: 14 },
   activeCard: {
     gap: spacing.sm,
-    position: 'relative',
+  },
+  activeTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  activeTopRight: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  activeZoneCode: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
   },
   activePaid: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
     color: colors.concrete,
     fontSize: 15,
     fontWeight: '700',

@@ -6,7 +6,7 @@ export const colors = {
   bg: '#1F1F1F', // asphalt
   surface: '#2A2A2A',
   surfaceAlt: '#333333',
-  border: '#5A5A5A',
+  border: '#737373', // ≥3:1 contrast vs bg/surface for WCAG 2.1 SC 1.4.11 non-text contrast
   text: '#E5E5E5', // concrete
   textMuted: '#BDBDBD',
   primary: '#2F80ED', // system blue

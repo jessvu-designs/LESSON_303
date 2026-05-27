@@ -110,6 +110,32 @@ function run() {
       bg: 'bg',
       min: 3.0,
     },
+    // WCAG 2.1 SC 1.4.11 Non-text Contrast (3:1) — UI component boundaries
+    // and meaningful graphics must contrast with adjacent colors.
+    {
+      name: 'Input/card border on app background (non-text)',
+      fg: 'border',
+      bg: 'bg',
+      min: 3.0,
+    },
+    {
+      name: 'Input/card border on card surface (non-text)',
+      fg: 'border',
+      bg: 'surface',
+      min: 3.0,
+    },
+    {
+      name: 'Primary button surface on app background (non-text)',
+      fg: 'primary',
+      bg: 'bg',
+      min: 3.0,
+    },
+    {
+      name: 'Danger button surface on app background (non-text)',
+      fg: 'danger',
+      bg: 'bg',
+      min: 3.0,
+    },
   ];
 
   const results = checks.map((check) => {

@@ -68,6 +68,7 @@ export default function Login() {
                 placeholderTextColor={colors.textMuted}
                 style={styles.input}
                 autoCapitalize="words"
+                accessibilityLabel="Name (optional)"
               />
             </View>
           ) : null}
@@ -83,6 +84,7 @@ export default function Login() {
               keyboardType="email-address"
               autoComplete="email"
               style={styles.input}
+              accessibilityLabel="Email"
             />
           </View>
 
@@ -96,6 +98,7 @@ export default function Login() {
               secureTextEntry
               autoComplete="password"
               style={styles.input}
+              accessibilityLabel="Password"
             />
           </View>
 

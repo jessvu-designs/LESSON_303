@@ -1,29 +1,77 @@
 # PARKER — Monorepo
 
-A mobile-first universal street parking app, scaffolded per [BRIEF.md](BRIEF.md).
+A mobile-first universal street parking app, built against [BRIEF.md](BRIEF.md). One app for parking anywhere: a universal layer that translates fragmented city/vendor systems into a single, low-stress mobile experience.
 
-## Requirements Coverage (MVP)
+> **Status legend:** ✅ implemented · 🟡 partial (demo / stub) · ⚪ planned
 
-This repo currently covers the core MVP requirements from the brief:
+## Requirements Coverage
 
-- Detect/confirm parking location with map and manual fallback behavior
-- Identify/select zone, with nearby-zone map and list modes
-- Show clear pricing and estimated totals before confirmation
-- Start a parking session with explicit confirmation state
-- Display active session with prominent countdown and expiration time
-- Extend parking with one-tap options and cost preview
-- Send 15/5/0 minute reminders (local + server push fanout)
-- Save/manage payment methods and vehicles
-- View parking history/receipts
+### Primary Goals ([brief](BRIEF.md#primary-goals))
 
-Non-functional requirements actively implemented:
+| Goal                            | Status | How it's met                                                                                                                                                                |
+| ------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Start a session in <10s         | ✅     | GPS sort + tap zone → Confirm → Start; cached quote keeps Confirm instant. See [hooks/parkingHooks.ts](apps/mobile/src/hooks/parkingHooks.ts).                              |
+| Reduce anxiety (where/when/$)   | ✅     | [session.tsx](apps/mobile/app/session.tsx) shows large countdown, expiration in local time, zone, plate, paid amount, and color-coded urgency.                              |
+| Effortless extension (1–2 taps) | ✅     | [extend.tsx](apps/mobile/app/extend.tsx) offers +15/+30/+60 buttons with live cost preview and a "not allowed" fallback when the max is hit.                                |
+| Support any city system         | ✅     | Connector pattern at [parking-connector.interface.ts](apps/api/src/providers/parking-connector.interface.ts) with Mock + Seattle adapters; aggregated on `/providers/zones`. |
+| Build trust through clarity     | ✅     | Plain-language copy, explicit confirmation states, WCAG contrast checks via `pnpm --dir apps/mobile contrast:check`.                                                        |
 
-- High-contrast visual system with WCAG-oriented checks
-- Large tap targets and mobile-first interaction patterns
-- Clear urgency states for expiring/expired sessions
-- Connector architecture for city/vendor expansion
+### MVP Scope ([brief](BRIEF.md#mvp-scope))
 
-The mobile app talks to the NestJS API over HTTP using **TanStack Query** for server state. The API uses a **connector pattern** so each city/vendor can be plugged in behind a common interface (only a mock connector is registered today).
+**In scope — all implemented:**
+
+| #   | Requirement                                                  | Status | Where                                                                                                       |
+| --- | ------------------------------------------------------------ | ------ | ----------------------------------------------------------------------------------------------------------- |
+| 1   | Detect or confirm parking location                           | ✅     | [services/location.ts](apps/mobile/src/services/location.ts), draggable pin on [confirm.tsx](apps/mobile/app/confirm.tsx) |
+| 2   | Identify or enter parking zone                               | ✅     | Closest-zone sort on Home + closer-zone suggestion when dragging the pin on Confirm                         |
+| 3   | Display rates and estimated total cost                       | ✅     | `GET /sessions/quote` previewed live on [confirm.tsx](apps/mobile/app/confirm.tsx) and [extend.tsx](apps/mobile/app/extend.tsx) |
+| 4   | Start parking session                                        | ✅     | `POST /sessions` via [parking-sessions.controller.ts](apps/api/src/parking-sessions/parking-sessions.controller.ts) |
+| 5   | Show active session with countdown                           | ✅     | [session.tsx](apps/mobile/app/session.tsx) — large timer, expiration time, prominent Extend CTA              |
+| 6   | Extend parking session                                       | ✅     | `POST /sessions/extend` + max-time enforcement at the connector layer                                       |
+| 7   | Send expiration reminders                                    | ✅     | 15 / 5 / 0 min — local ([services/notifications.ts](apps/mobile/src/services/notifications.ts)) + server push ([reminder.scheduler.ts](apps/api/src/notifications/reminder.scheduler.ts)) |
+| 8   | Save payment methods                                         | 🟡     | Stripe SetupIntents + Apple/Google Pay via PaymentSheet; falls back to a stub wallet when keys are absent   |
+| 9   | Store license plate(s)                                       | ✅     | [vehicles.tsx](apps/mobile/app/vehicles.tsx) — multi-plate, default promotion, normalization                |
+| 10  | View receipts / history                                      | ✅     | [history.tsx](apps/mobile/app/history.tsx) with totals                                                      |
+
+**Explicitly out of scope (per brief):** image-based sign interpretation, predictive availability, enforcement forecasting, municipal back-office tooling, ticket dispute flow, space reservation.
+
+### Core Features ([brief](BRIEF.md#core-features))
+
+| Feature                         | Status | Notes                                                                                                                                              |
+| ------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Location Detection           | ✅     | GPS + manual pin drag fallback; reverse-geocoded address resolved via [expo-location's platform geocoder](apps/mobile/src/services/location.ts)    |
+| 2. Zone Identification          | ✅     | Geofence-like distance sort + closer-zone suggestion (>25 m) while dragging the pin                                                                |
+| 3. Pricing Transparency         | ✅     | Hourly rate + live total preview; max-time guard surfaced before payment                                                                            |
+| 4. Active Parking Session       | ✅     | Countdown, expiration timestamp, location, zone, plate, total paid, prominent Extend CTA                                                            |
+| 5. Session Extension            | ✅     | One-tap +15/+30/+60, cost preview, max-time fallback message                                                                                        |
+| 6. Notifications and Alerts     | ✅     | 15 / 5 / 0 min via dual local + server-push path; per-session idempotency flags so extensions reset reminders                                       |
+| 7. Payments                     | 🟡     | Stripe SetupIntent + Apple/Google Pay via PaymentSheet; stub mode for offline demo; **no charge yet** — real connectors will execute the transaction |
+| 8. History and Receipts         | ✅     | Past sessions with totals; search/filter and export remain ⚪                                                                                       |
+
+### Functional Requirements ([brief](BRIEF.md#functional-requirements))
+
+| Area                       | Status | Notes                                                                                                                                                |
+| -------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication             | ✅     | Email + password JWT; token stored in [expo-secure-store](apps/mobile/src/services/tokenStorage.ts); `AuthGate` redirects on 401                      |
+| User profile               | ✅     | Name, default payment method, saved vehicles, notification preferences (push token registration)                                                      |
+| Session lifecycle          | ✅     | start → active → extend → end / expire, with status reconciliation on every fetch                                                                     |
+| Error handling             | ✅     | Invalid zone, max-time exceeded, failed payment, GPS denied, network errors — surfaced with plain-language toasts/alerts                              |
+| Offline / low connectivity | 🟡     | Active session cached by TanStack Query; local notifications fire offline. Full offline session-create queue is ⚪.                                   |
+
+### Non-Functional Requirements ([brief](BRIEF.md#non-functional-requirements))
+
+| Requirement   | Status | How it's met                                                                                                                              |
+| ------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Performance   | ✅     | TanStack Query caching; lightweight Expo Router stack; quotes computed server-side and cached per zone/minutes                            |
+| Accessibility | ✅     | WCAG-aligned color tokens with an automated contrast check (`pnpm --dir apps/mobile contrast:check`), large tap targets, semantic labels |
+| Security      | 🟡     | JWT auth, bcrypt password hashing, Stripe handles card data, no PAN ever touches our DB. Audit logging + RBAC remain ⚪.                  |
+| Reliability   | 🟡     | Idempotent reminder fan-out, graceful connector failure handling. Retry/backoff for connector calls is ⚪.                                |
+| Scalability   | 🟡     | Connector-per-vendor architecture is in place. Multi-node scheduler (BullMQ) is ⚪ — see Next Sprints.                                    |
+| Compliance    | ⚪     | Privacy/Terms copy + geolocation consent prompts wired; legal pages and audit logs are out of scope for the demo.                          |
+
+### Architecture aligned with the brief
+
+The backend uses the **adapter / connector model** the brief recommends. Each city/vendor implements [`ParkingConnector`](apps/api/src/providers/parking-connector.interface.ts) and registers a unique `providerId`; [`ProvidersService`](apps/api/src/providers/providers.service.ts) aggregates them and `ParkingSessionsService` routes by `zone.providerId` (new sessions) or `session.providerId` (existing). A normalized domain model (User, Vehicle, ParkingZone, ParkingSession, Receipt) lives in [packages/shared-types](packages/shared-types/src/index.ts) so the mobile app never sees vendor-specific shapes.
 
 ## Structure
 
@@ -221,13 +269,29 @@ The mobile UI follows an urban, signage-inspired visual system intended for outd
 - State semantics: active/expiring/expired states use explicit text plus color cues
 - Contrast safety: token-level contrast checks are automated
 
-Run contrast checks:
+### WCAG 2.1 Level AA conformance
+
+The app is designed and tested against **WCAG 2.1 Level AA**. Conformance is verified across both automated checks and component-level conventions.
+
+| Success Criterion             | How it's met                                                                                                                            |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.3.1 Info and Relationships  | Every `TextInput` has an `accessibilityLabel`; status uses text + color, never color alone                                              |
+| 1.4.3 Contrast (Minimum)      | All text/background pairs ≥4.5:1; large urgent timer ≥3:1 — enforced by [check-contrast.cjs](apps/mobile/scripts/check-contrast.cjs)    |
+| 1.4.4 Resize Text             | All text uses RN's default `allowFontScaling` so iOS Dynamic Type / Android font scale apply up to 200%                                 |
+| 1.4.11 Non-text Contrast      | Input borders, button surfaces, and focus indicators all hit ≥3:1 against adjacent background (covered by the audit)                   |
+| 2.4.4 Link Purpose            | Buttons/links use descriptive labels ("Sign in to PARKER", "Extend +15 min") rather than generic verbs                                  |
+| 2.4.7 Focus Visible           | Pressables use platform-default ripple/press states; Pressable `({ pressed })` styles reduce opacity for visible feedback              |
+| 2.5.5 / 2.5.8 Target Size     | Primary buttons ≥54×54, inputs ≥48 tall, icon-only Pressables use `hitSlop` to extend to ≥44                                            |
+| 3.3.2 Labels or Instructions  | Every form field has a visible label *and* a programmatic `accessibilityLabel`                                                          |
+| 4.1.2 Name, Role, Value       | Interactive elements declare `accessibilityRole` (`button`, `tab`, `tablist`) and `accessibilityState` (`selected`, `disabled`)         |
+
+Run the contrast audit:
 
 ```bash
 pnpm --dir apps/mobile contrast:check
 ```
 
-This script validates key token pairings and fails if ratios drop below configured thresholds.
+The script validates 12 text and non-text contrast pairings and fails CI if any drops below its WCAG 2.1 AA threshold.
 
 ## Next sprints (from the brief)
 

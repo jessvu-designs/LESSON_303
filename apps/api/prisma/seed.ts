@@ -91,6 +91,14 @@ async function main() {
     });
   }
 
+  // ---- ensure the demo account starts with NO active parking ----
+  // Any leftover active/expired-but-not-flipped sessions get closed out so
+  // a fresh sign-in always lands on a clean Home screen.
+  await prisma.parkingSession.updateMany({
+    where: { userId: demo.id, status: 'active' },
+    data: { status: 'ended' },
+  });
+
   // eslint-disable-next-line no-console
   console.log('Seed complete.');
 }

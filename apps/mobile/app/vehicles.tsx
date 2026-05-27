@@ -141,6 +141,7 @@ export default function VehiclesScreen() {
           autoCapitalize="characters"
           autoCorrect={false}
           style={styles.input}
+          accessibilityLabel="License plate"
         />
         <TextInput
           value={state}
@@ -150,6 +151,7 @@ export default function VehiclesScreen() {
           autoCapitalize="characters"
           maxLength={3}
           style={styles.input}
+          accessibilityLabel="State"
         />
         <TextInput
           value={nickname}
@@ -157,6 +159,7 @@ export default function VehiclesScreen() {
           placeholder="Nickname (e.g. My Car)"
           placeholderTextColor={colors.textMuted}
           style={styles.input}
+          accessibilityLabel="Vehicle nickname"
         />
         <Button
           label={create.isPending ? 'Adding…' : 'Add vehicle'}
