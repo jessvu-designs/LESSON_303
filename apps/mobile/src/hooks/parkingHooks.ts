@@ -140,6 +140,10 @@ export function useEndSession() {
   return useMutation({
     mutationFn: (sessionId: string) => parkingApi.endSession(sessionId),
     onSuccess: async (session) => {
+      // Clear the active-session cache immediately so the home screen
+      // hides the "Parking active" card without waiting for a network
+      // refetch (which could race with navigation back to /).
+      qc.setQueryData(qk.activeSession, null);
       await invalidateSessions(qc);
       await cancelSessionReminders(session.id);
     },
