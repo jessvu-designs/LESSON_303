@@ -4,7 +4,7 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
 import { ErrorState, Loading } from '../src/components/Status';
-import { STRIPE_ENABLED, STRIPE_MERCHANT_ID } from '../src/config';
+import { STRIPE_ENABLED } from '../src/config';
 import {
   useAddStubCard,
   useDeletePaymentMethod,
@@ -159,8 +159,6 @@ export default function WalletScreen() {
 
       <View style={{ height: spacing.md }} />
       <Button label="Return" variant="secondary" onPress={() => router.back()} />
-
-      {STRIPE_MERCHANT_ID ? null : null /* referenced for tree-shaking */}
     </View>
   );
 }

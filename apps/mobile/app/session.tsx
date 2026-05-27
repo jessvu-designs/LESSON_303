@@ -115,7 +115,7 @@ export default function ActiveSession() {
 
         <Card style={{ gap: spacing.sm }}>
           <Text style={typography.label}>Current zone</Text>
-          <Text style={typography.h2}>{zone?.displayName ?? '—'}</Text>
+          <Text style={typography.streetName}>{zone?.displayName ?? '—'}</Text>
           {zone?.address ? <Text style={typography.bodyMuted}>{zone.address}</Text> : null}
           <Text style={typography.bodyMuted}>Zone {zone?.code ?? '—'}</Text>
           <View style={{ height: spacing.sm }} />

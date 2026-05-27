@@ -148,7 +148,7 @@ export default function Home() {
           </View>
           {activeZoneQ.data ? (
             <>
-              <Text style={typography.h2}>{activeZoneQ.data.displayName}</Text>
+              <Text style={typography.streetName}>{activeZoneQ.data.displayName}</Text>
               {activeZoneQ.data.address ? <Text style={[typography.body, { fontSize: 18 }]}>{activeZoneQ.data.address}</Text> : null}
             </>
           ) : null}
@@ -168,9 +168,9 @@ export default function Home() {
         </Card>
       ) : detected ? (
         <Card style={{ gap: spacing.sm, borderTopColor: colors.link }}>
-          <Text style={styles.zoneCode}>{locQ.data ? 'Closest parking zone' : 'Selected parking zone'}</Text>
+          <Text style={[typography.sectionHeading, styles.kickerSpacing]}>{locQ.data ? 'Closest parking zone' : 'Selected parking zone'}</Text>
           <Text style={[typography.label, { color: colors.link }]}>Zone {detected.code}</Text>
-          <Text style={typography.h2}>{detected.displayName}</Text>
+          <Text style={typography.streetName}>{detected.displayName}</Text>
           <Text style={typography.bodyMuted}>
             {formatMoney(detected.rate.hourlyCents, detected.rate.currency)}/hr · 2HR limit enforced
             {detectedDistance && Number.isFinite(detectedDistance)
@@ -187,7 +187,7 @@ export default function Home() {
       <View style={{ height: spacing.xl }} />
 
       <View style={styles.nearbyHeader}>
-        <Text style={[styles.zoneCode, { marginBottom: 0 }]}>Map and nearby zones</Text>
+        <Text style={typography.sectionHeading}>Map and nearby zones</Text>
         <View style={styles.toggle} accessibilityRole="tablist">
           {(['list', 'map'] as const).map((mode) => {
             const selected = nearbyView === mode;
@@ -239,9 +239,9 @@ export default function Home() {
             accessibilityLabel={`Park at ${z.displayName}, zone ${z.code}, ${formatMoney(z.rate.hourlyCents, z.rate.currency)} per hour`}
             style={({ pressed }) => ({ marginTop: spacing.sm, opacity: pressed ? 0.85 : 1 })}
           >
-            <Card>
+            <Card style={{ gap: spacing.xs }}>
               <Text style={typography.label}>Zone {z.code}</Text>
-              <Text style={typography.h2}>{z.displayName}</Text>
+              <Text style={typography.streetName}>{z.displayName}</Text>
               <Text style={typography.bodyMuted}>
                 {formatMoney(z.rate.hourlyCents, z.rate.currency)}/hr · 2HR limit enforced
                 {Number.isFinite(meters) ? ` · ${formatDistance(meters)}` : ''}
@@ -262,12 +262,7 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: { padding: spacing.lg, gap: spacing.md },
-  zoneCode: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+  kickerSpacing: {
     marginTop: -spacing.xs,
     marginBottom: spacing.md,
   },

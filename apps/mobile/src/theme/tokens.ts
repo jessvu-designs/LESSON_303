@@ -34,7 +34,20 @@ export const radii = { sm: 4, md: 8, lg: 10, pill: 999 };
 const fontFamilyBase = Platform.select({
   ios: 'Inter',
   android: 'Roboto Condensed',
-  default: 'IBM Plex Sans',
+  // Web: provide an explicit sans-serif fallback stack so that browsers
+  // without "IBM Plex Sans" installed don't fall back to the default serif.
+  default:
+    'IBM Plex Sans, Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+});
+
+// Serif family used for street names (zone displayName) to give locations
+// a recognizable, editorial signage feel that contrasts with the sans-serif
+// system UI text.
+const fontFamilySerif = Platform.select({
+  ios: 'Georgia',
+  android: 'serif',
+  default:
+    'Georgia, "Times New Roman", Times, "Iowan Old Style", "Apple Garamond", serif',
 });
 
 export const typography = {
@@ -84,5 +97,25 @@ export const typography = {
     textTransform: 'uppercase' as const,
     letterSpacing: 0.9,
     fontWeight: '700' as const,
+  },
+  // Concrete-white signage-style heading used as the primary card kicker
+  // (e.g. "CLOSEST PARKING ZONE", "MAP AND NEARBY ZONES"). Sits above the
+  // smaller yellow `label` when both appear in the same card.
+  sectionHeading: {
+    fontFamily: fontFamilyBase,
+    fontSize: 15,
+    color: colors.text,
+    fontWeight: '800' as const,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase' as const,
+  },
+  // Serif treatment for zone street names (e.g. "Capitol Hill — Pine St").
+  // Same size/weight as h2 so existing layout is preserved.
+  streetName: {
+    fontFamily: fontFamilySerif,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: colors.text,
+    letterSpacing: 0.1,
   },
 };

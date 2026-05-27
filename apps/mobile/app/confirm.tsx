@@ -100,10 +100,10 @@ export default function ConfirmParking() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Card style={{ gap: spacing.xs }}>
-        <Text style={styles.zoneCode}>Selected zone</Text>
-        <Text style={typography.label}>Zone {zone.code}</Text>
-        <Text style={typography.h2}>{zone.displayName}</Text>
+      <Card style={{ gap: spacing.sm, borderTopColor: colors.link }}>
+        <Text style={[typography.sectionHeading, styles.kickerSpacing]}>Selected zone</Text>
+        <Text style={[typography.label, { color: colors.link }]}>Zone {zone.code}</Text>
+        <Text style={typography.streetName}>{zone.displayName}</Text>
         {zone.address ? <Text style={typography.bodyMuted}>{zone.address}</Text> : null}
         <Text style={typography.bodyMuted}>
           {zone.rules.maxSessionMinutes ? `${Math.floor(zone.rules.maxSessionMinutes / 60)}HR limit enforced` : 'Posted parking limits apply'}
@@ -289,12 +289,7 @@ export default function ConfirmParking() {
 
 const styles = StyleSheet.create({
   container: { padding: spacing.lg, gap: spacing.md },
-  zoneCode: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+  kickerSpacing: {
     marginTop: -spacing.xs,
     marginBottom: spacing.md,
   },
@@ -318,7 +313,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surfaceAlt,
   },
-  vehicleRowSelected: { borderColor: colors.primary, borderWidth: 2 },
+  vehicleRowSelected: { borderColor: colors.text, borderWidth: 2 },
   radio: {
     width: 20,
     height: 20,

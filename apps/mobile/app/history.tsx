@@ -42,7 +42,7 @@ export default function History() {
         const zone = zonesById.get(item.zoneId);
         return (
           <Card>
-            <Text style={typography.h2}>{zone?.displayName ?? 'Unmapped zone'}</Text>
+            <Text style={typography.streetName}>{zone?.displayName ?? 'Unmapped zone'}</Text>
             <Text style={typography.bodyMuted}>
               {formatDate(item.startedAt)} · {formatTime(item.startedAt)} – {formatTime(item.expiresAt)}
             </Text>

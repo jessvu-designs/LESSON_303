@@ -13,6 +13,7 @@ A mobile-first universal street parking app, built against [BRIEF.md](BRIEF.md).
 | Start a session in <10s         | ✅     | GPS sort + tap zone → Confirm → Start; cached quote keeps Confirm instant. See [hooks/parkingHooks.ts](apps/mobile/src/hooks/parkingHooks.ts).                              |
 | Reduce anxiety (where/when/$)   | ✅     | [session.tsx](apps/mobile/app/session.tsx) shows large countdown, expiration in local time, zone, plate, paid amount, and color-coded urgency.                              |
 | Effortless extension (1–2 taps) | ✅     | [extend.tsx](apps/mobile/app/extend.tsx) offers +15/+30/+60 buttons with live cost preview and a "not allowed" fallback when the max is hit.                                |
+| Effortless end-of-session       | ✅     | [session.tsx](apps/mobile/app/session.tsx) in-frame confirm modal → receipt summary; cache is cleared optimistically so the home screen drops the active card immediately. |
 | Support any city system         | ✅     | Connector pattern at [parking-connector.interface.ts](apps/api/src/providers/parking-connector.interface.ts) with Mock + Seattle adapters; aggregated on `/providers/zones`. |
 | Build trust through clarity     | ✅     | Plain-language copy, explicit confirmation states, WCAG contrast checks via `pnpm --dir apps/mobile contrast:check`.                                                        |
 
@@ -28,6 +29,7 @@ A mobile-first universal street parking app, built against [BRIEF.md](BRIEF.md).
 | 4   | Start parking session                                        | ✅     | `POST /sessions` via [parking-sessions.controller.ts](apps/api/src/parking-sessions/parking-sessions.controller.ts) |
 | 5   | Show active session with countdown                           | ✅     | [session.tsx](apps/mobile/app/session.tsx) — large timer, expiration time, prominent Extend CTA              |
 | 6   | Extend parking session                                       | ✅     | `POST /sessions/extend` + max-time enforcement at the connector layer                                       |
+| 6b  | End parking session                                          | ✅     | `POST /sessions/:id/end` with in-app confirm modal + receipt summary at [session.tsx](apps/mobile/app/session.tsx) |
 | 7   | Send expiration reminders                                    | ✅     | 15 / 5 / 0 min — local ([services/notifications.ts](apps/mobile/src/services/notifications.ts)) + server push ([reminder.scheduler.ts](apps/api/src/notifications/reminder.scheduler.ts)) |
 | 8   | Save payment methods                                         | 🟡     | Stripe SetupIntents + Apple/Google Pay via PaymentSheet; falls back to a stub wallet when keys are absent   |
 | 9   | Store license plate(s)                                       | ✅     | [vehicles.tsx](apps/mobile/app/vehicles.tsx) — multi-plate, default promotion, normalization                |
@@ -127,7 +129,7 @@ EXPO_PUBLIC_API_URL=http://192.168.1.10:3000 pnpm mobile
 - **Login / Sign up** — email + password against `/auth/*`
 - **Home** — location context first, nearby zone map/list, active parking card, account drawer
 - **Confirm Parking Zone** — duration choice, transparent live pricing, max-time guard
-- **Active Parking** — large countdown, location, plate, paid amount, extend/end
+- **Active Parking** — large countdown, location, plate, paid amount, extend/end. Ending opens an in-frame confirmation modal (with a live preview of forfeited paid time) and, on success, shows a receipt summary card.
 - **Extend Parking** — 1-tap +15/+30/+60 with cost preview and "not allowed" fallback
 - **History** — past sessions with totals
 
@@ -265,6 +267,7 @@ Domain models (User, Vehicle, ParkingZone, ParkingSession, Receipt, …) live in
 The mobile UI follows an urban, signage-inspired visual system intended for outdoor readability and fast scanning under time pressure.
 
 - Palette: asphalt/concrete base with curb yellow, meter green, alert red/orange, and system blue state colors
+- Typography tokens: `display`, `h1`-`h3`, `body`/`bodyMuted`, plus two kickers — `label` (small curb-yellow tag) and `sectionHeading` (concrete-white signage-style kicker for prominent card titles)
 - Information hierarchy: map-first context, practical panel cards, strong CTA emphasis
 - State semantics: active/expiring/expired states use explicit text plus color cues
 - Contrast safety: token-level contrast checks are automated
