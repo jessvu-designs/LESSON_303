@@ -99,12 +99,13 @@ function MobileFrame({ children }: { children: React.ReactNode }) {
         backgroundColor: BACKDROP_COLOR,
         alignItems: 'center',
         justifyContent: 'center',
+        paddingVertical: 32,
       }}
     >
       <View
         style={{
+          flex: 1,
           width: '100%',
-          height: '100%',
           maxWidth: PHONE_MAX_WIDTH,
           maxHeight: PHONE_MAX_HEIGHT,
           backgroundColor: colors.bg,
