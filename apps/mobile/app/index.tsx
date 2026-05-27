@@ -167,12 +167,12 @@ export default function Home() {
           <Text style={[typography.bodyMuted, { textAlign: 'center', fontWeight: '400' }]}>Parking confirmed. Ends at {new Date(active.expiresAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.</Text>
         </Card>
       ) : detected ? (
-        <Card style={{ gap: spacing.sm }}>
-          <Text style={typography.label}>{locQ.data ? 'Closest parking zone' : 'Selected parking zone'}</Text>
+        <Card style={{ gap: spacing.sm, borderTopColor: colors.link }}>
+          <Text style={styles.zoneCode}>{locQ.data ? 'Closest parking zone' : 'Selected parking zone'}</Text>
+          <Text style={[typography.label, { color: colors.link }]}>Zone {detected.code}</Text>
           <Text style={typography.h2}>{detected.displayName}</Text>
-          {detected.address ? <Text style={typography.bodyMuted}>{detected.address}</Text> : null}
           <Text style={typography.bodyMuted}>
-            Zone {detected.code} - Downtown Core
+            {formatMoney(detected.rate.hourlyCents, detected.rate.currency)}/hr · 2HR limit enforced
             {detectedDistance && Number.isFinite(detectedDistance)
               ? ` · ${formatDistance(detectedDistance)} away`
               : ''}
@@ -187,7 +187,7 @@ export default function Home() {
       <View style={{ height: spacing.xl }} />
 
       <View style={styles.nearbyHeader}>
-        <Text style={typography.label}>Map and nearby zones</Text>
+        <Text style={[styles.zoneCode, { marginBottom: 0 }]}>Map and nearby zones</Text>
         <View style={styles.toggle} accessibilityRole="tablist">
           {(['list', 'map'] as const).map((mode) => {
             const selected = nearbyView === mode;
@@ -240,9 +240,10 @@ export default function Home() {
             style={({ pressed }) => ({ marginTop: spacing.sm, opacity: pressed ? 0.85 : 1 })}
           >
             <Card>
+              <Text style={typography.label}>Zone {z.code}</Text>
               <Text style={typography.h2}>{z.displayName}</Text>
               <Text style={typography.bodyMuted}>
-                Zone {z.code} · {formatMoney(z.rate.hourlyCents, z.rate.currency)}/hr · 2HR limit enforced
+                {formatMoney(z.rate.hourlyCents, z.rate.currency)}/hr · 2HR limit enforced
                 {Number.isFinite(meters) ? ` · ${formatDistance(meters)}` : ''}
               </Text>
               <Text style={{ color: colors.link, marginTop: spacing.sm, alignSelf: 'flex-end', fontWeight: '600' }}>
@@ -261,6 +262,15 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: { padding: spacing.lg, gap: spacing.md },
+  zoneCode: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: -spacing.xs,
+    marginBottom: spacing.md,
+  },
   headerMenuTrigger: {
     minWidth: 72,
     alignItems: 'center',

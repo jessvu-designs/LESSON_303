@@ -101,11 +101,12 @@ export default function ConfirmParking() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Card style={{ gap: spacing.xs }}>
-        <Text style={typography.label}>Selected zone</Text>
+        <Text style={styles.zoneCode}>Selected zone</Text>
+        <Text style={typography.label}>Zone {zone.code}</Text>
         <Text style={typography.h2}>{zone.displayName}</Text>
         {zone.address ? <Text style={typography.bodyMuted}>{zone.address}</Text> : null}
         <Text style={typography.bodyMuted}>
-          Zone {zone.code} · {zone.rules.maxSessionMinutes ? `${Math.floor(zone.rules.maxSessionMinutes / 60)}HR limit enforced` : 'Posted parking limits apply'}
+          {zone.rules.maxSessionMinutes ? `${Math.floor(zone.rules.maxSessionMinutes / 60)}HR limit enforced` : 'Posted parking limits apply'}
           {distance != null ? ` · ${formatDistance(distance)} away` : ''}
         </Text>
       </Card>
@@ -288,6 +289,15 @@ export default function ConfirmParking() {
 
 const styles = StyleSheet.create({
   container: { padding: spacing.lg, gap: spacing.md },
+  zoneCode: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: -spacing.xs,
+    marginBottom: spacing.md,
+  },
   choice: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
