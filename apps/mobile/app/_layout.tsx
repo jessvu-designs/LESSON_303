@@ -48,48 +48,61 @@ function AuthGate({ children }: { children: React.ReactElement | React.ReactElem
   return <>{children}</>;
 }
 
-// On web desktop, constrain the app to a responsive mobile-sized column
-// centered on a dark backdrop. The column fills the available viewport and
-// shrinks naturally on smaller windows (real mobile browsers, narrow desktop
-// windows), capped at mobile max width × height. On native, this is a
-// passthrough.
+// On web, constrain the app to a responsive mobile-sized column centered on
+// a dark backdrop. The column fills the available viewport and shrinks
+// naturally on smaller windows, capped at mobile max width × height. On
+// native, this is a passthrough.
 const PHONE_MAX_WIDTH = 480;
 const PHONE_MAX_HEIGHT = 900;
 const BACKDROP_COLOR = '#0A0A0A';
 
-function MobileFrame({ children }: { children: React.ReactNode }) {
-  if (Platform.OS !== 'web') return <OverlayHost>{children}</OverlayHost>;
-  // Inject global CSS that enforces the mobile frame purely via CSS — this
-  // runs regardless of React mount timing / SSR quirks on the Vercel build.
-  // The Expo Router web build mounts the app inside #root, so we constrain
-  // #root directly to a mobile-sized centered column.
-  if (typeof document !== 'undefined' && !document.getElementById('mobile-frame-style')) {
+// Inject the mobile-frame CSS at module load time (not inside a component),
+// so it lands in <head> before React mounts. !important rules are required
+// to beat the inline `flex: 1; height: 100%` styles react-native-web puts
+// on the app root, and the default `#expo-reset` <style> shipped in the
+// Expo Router single-output index.html.
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const STYLE_ID = 'mobile-frame-style';
+  if (!document.getElementById(STYLE_ID)) {
     const style = document.createElement('style');
-    style.id = 'mobile-frame-style';
+    style.id = STYLE_ID;
     style.innerHTML = `
-      html, body { height: 100%; margin: 0; background: ${BACKDROP_COLOR}; overflow: hidden; }
+      html, body {
+        height: 100% !important;
+        margin: 0 !important;
+        background: ${BACKDROP_COLOR} !important;
+        overflow: hidden !important;
+      }
       #root {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100vw;
-        height: 100vh;
-        background: ${BACKDROP_COLOR};
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: ${BACKDROP_COLOR} !important;
+        flex: none !important;
       }
       #root > * {
-        width: 100%;
-        height: 100%;
-        max-width: ${PHONE_MAX_WIDTH}px;
-        max-height: ${PHONE_MAX_HEIGHT}px;
-        background: ${colors.bg};
-        overflow: hidden;
-        box-shadow: 0 10px 60px rgba(0,0,0,0.7);
-        display: flex;
-        flex-direction: column;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: ${PHONE_MAX_WIDTH}px !important;
+        max-height: ${PHONE_MAX_HEIGHT}px !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        flex: 0 1 auto !important;
+        background: ${colors.bg} !important;
+        overflow: hidden !important;
+        box-shadow: 0 10px 60px rgba(0, 0, 0, 0.7) !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
     `;
     document.head.appendChild(style);
   }
+}
+
+function MobileFrame({ children }: { children: React.ReactNode }) {
+  if (Platform.OS !== 'web') return <OverlayHost>{children}</OverlayHost>;
   return <OverlayHost>{children}</OverlayHost>;
 }
 
