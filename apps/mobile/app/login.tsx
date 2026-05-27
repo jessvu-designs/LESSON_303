@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
 import { useAuth } from '../src/auth/AuthProvider';
@@ -45,13 +46,18 @@ export default function Login() {
       style={{ flex: 1, backgroundColor: colors.bg }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={typography.h1}>PARKER</Text>
-        <Text style={[typography.bodyMuted, { marginBottom: spacing.lg }]}>
-          {mode === 'signin' ? 'Sign in to manage active parking and zone payments.' : 'Create an account to start parking with PARKER.'}
-        </Text>
-
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.brand}>
+          <MaterialCommunityIcons name="car-outline" size={36} color={colors.text} />
+          <Text style={styles.brandText}>PARKER</Text>
+        </View>
         <Card style={{ gap: spacing.md }}>
+          <Text style={typography.bodyMuted}>
+            {mode === 'signin' ? 'Sign in to manage active parking and zone payments.' : 'Create an account to start parking with PARKER.'}
+          </Text>
           {mode === 'signup' ? (
             <View style={{ gap: spacing.xs }}>
               <Text style={typography.label}>Name (optional)</Text>
@@ -116,7 +122,25 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.lg, paddingTop: spacing.xxl, gap: spacing.sm },
+  container: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  brand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: spacing.md,
+  },
+  brandText: {
+    color: colors.text,
+    fontWeight: '700',
+    fontSize: 32,
+    letterSpacing: 1.2,
+  },
   input: {
     backgroundColor: colors.surfaceAlt,
     color: colors.text,
