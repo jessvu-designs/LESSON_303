@@ -1,0 +1,28 @@
+# Local development services.
+#
+# Spin up Postgres for the API:
+#   docker compose up -d db
+# Then in apps/api/.env set:
+#   DATABASE_URL=postgresql://parker:parker@localhost:5432/parker
+#   JWT_SECRET=dev-only-secret
+# And run the API:
+#   pnpm --filter @parking/api prisma:push
+#   pnpm --filter @parking/api db:seed
+#   pnpm --filter @parking/api start:dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: parker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: parker
+      POSTGRES_PASSWORD: parker
+      POSTGRES_DB: parker
+    ports:
+      - "5432:5432"
+    volumes:
+      - parker-db-data:/var/lib/postgresql/data
+
+volumes:
+  parker-db-data:

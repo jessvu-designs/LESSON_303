@@ -1,15 +1,15 @@
 // Prisma schema for Universal Parking.
 //
-// Datasource defaults to SQLite for zero-setup local dev. Swap `provider`
-// to "postgresql" and point DATABASE_URL at Postgres when ready — the schema
-// is provider-agnostic except for the engine string.
+// Datasource: Postgres in all environments. For local dev a one-line
+// `docker compose up -d db` (see repo root) spins up Postgres on
+// localhost:5432. Set DATABASE_URL via apps/api/.env.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

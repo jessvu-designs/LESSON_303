@@ -88,18 +88,21 @@ packages/
 ## Prereqs
 - Node 20+
 - pnpm 9+ (`npm i -g pnpm`)
+- Docker (for the local Postgres container) — or any other Postgres you can point `DATABASE_URL` at
 - Expo Go on your phone (or an iOS/Android simulator) for the mobile app
 
 ## Install
 
 ```bash
 pnpm install
-pnpm --filter @parking/api prisma:generate   # generates the Prisma client
-pnpm --filter @parking/api prisma:migrate    # creates the SQLite DB + tables
-pnpm --filter @parking/api db:seed           # seeds demo user, zones, history
+docker compose up -d db                          # local Postgres on :5432
+cp apps/api/.env.example apps/api/.env           # then edit DATABASE_URL + JWT_SECRET
+pnpm --filter @parking/api prisma:generate       # generates the Prisma client
+pnpm --filter @parking/api prisma:push           # creates tables on the fresh DB
+pnpm --filter @parking/api db:seed               # seeds demo user, zones, history
 ```
 
-After pulling new schema changes, re-run `prisma:migrate` (Prisma will name the migration interactively) to apply them.
+The schema is synced with `prisma db push` (no migration files committed) — re-run `prisma:push` after pulling schema changes.
 
 ## Run
 
@@ -123,6 +126,25 @@ For a physical device, find your dev machine's LAN IP and start Expo with:
 ```bash
 EXPO_PUBLIC_API_URL=http://192.168.1.10:3000 pnpm mobile
 ```
+
+## Deploy
+
+The repo is set up for a one-click deploy on [Render](https://render.com) (free tier) for the API + Postgres, and Vercel for the mobile web build.
+
+### API + database (Render)
+
+1. Push the repo to GitHub.
+2. On Render → **New → Blueprint** → connect this repo. Render reads [render.yaml](render.yaml), provisions a free Postgres database, builds the Nest app, and starts it.
+3. `start:prod` runs `prisma db push` (creates tables on the fresh DB) and the idempotent seed script before booting, so the first request finds the demo user and zones already populated.
+4. Note the service URL Render assigns (e.g. `https://parker-api.onrender.com`).
+
+### Mobile web (Vercel)
+
+1. In your Vercel project (already wired to `apps/mobile` via [apps/mobile/vercel.json](apps/mobile/vercel.json)) → **Settings → Environment Variables**, add `EXPO_PUBLIC_API_URL=https://parker-api.onrender.com` for the **Production** environment.
+2. Redeploy. Expo bakes `EXPO_PUBLIC_*` vars at build time, so a redeploy is required for the change to take effect.
+3. Sign in from your phone's browser at `https://lesson-303.vercel.app` — the bundle will now call the public API.
+
+CORS is open (`app.enableCors()` in [main.ts](apps/api/src/main.ts)), so the Vercel origin is allowed without further configuration.
 
 ## Mobile screens
 
@@ -243,17 +265,15 @@ Adding a new city/vendor:
 
 ## Persistence
 
-[Prisma](apps/api/prisma/schema.prisma) backs users, vehicles, zones, sessions, and extensions. The datasource defaults to **SQLite** (`apps/api/prisma/dev.db`) for zero-setup local dev. To switch to Postgres:
+[Prisma](apps/api/prisma/schema.prisma) backs users, vehicles, zones, sessions, and extensions. The datasource is **Postgres** in all environments \u2014 spin up the local container with `docker compose up -d db` (see [docker-compose.yml](docker-compose.yml)) or point `DATABASE_URL` at any other Postgres (e.g. Neon, Supabase).
 
-1. Set `DATABASE_URL` to your Postgres connection string in `apps/api/.env`.
-2. Change `provider = "sqlite"` to `provider = "postgresql"` in [schema.prisma](apps/api/prisma/schema.prisma).
-3. Re-run `pnpm --filter @parking/api prisma:migrate`.
+Schema sync uses `prisma db push` (no migration files are committed); the production `start:prod` script applies the schema and re-runs the idempotent seed on boot so a fresh Render database is ready to serve immediately.
 
 Useful commands (from repo root):
 
 ```bash
 pnpm --filter @parking/api prisma:generate
-pnpm --filter @parking/api prisma:migrate
+pnpm --filter @parking/api prisma:push
 pnpm --filter @parking/api db:seed
 pnpm --filter @parking/api db:reset    # wipes DB + reseeds
 ```

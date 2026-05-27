@@ -1,0 +1,43 @@
+# Render Blueprint — one-click deploy of the PARKER API + Postgres.
+#
+# Usage:
+#   1. Push this repo to GitHub.
+#   2. On render.com, New + → Blueprint → connect the repo.
+#   3. Render reads this file, provisions the database, builds, and starts.
+#   4. After the first deploy, copy the service URL (https://parker-api.onrender.com)
+#      into Vercel as `EXPO_PUBLIC_API_URL`, then redeploy the mobile web app.
+#
+# Free tier notes:
+#   - The web service sleeps after ~15min of inactivity; first request after sleep
+#     takes ~30s to wake.
+#   - Free Postgres is retained for 30 days, then expires. Upgrade for production.
+
+databases:
+  - name: parker-db
+    plan: free
+    databaseName: parker
+    user: parker
+
+services:
+  - type: web
+    name: parker-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: .
+    # Install workspace deps, generate Prisma client, build Nest app.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @parking/api build
+    # Push schema to the fresh DB, run idempotent seed, then start.
+    startCommand: pnpm --filter @parking/api start:prod
+    healthCheckPath: /providers
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: parker-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_VERSION
+        value: "20"
+      - key: PORT
+        value: "3000"
