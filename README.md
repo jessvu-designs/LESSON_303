@@ -1,12 +1,81 @@
 # PARKER — Monorepo
 
-A mobile-first universal street parking app, built against [BRIEF.md](BRIEF.md). One app for parking anywhere: a universal layer that translates fragmented city/vendor systems into a single, low-stress mobile experience.
+A mobile-first universal street parking app, built against [BRIEF.md](context/BRIEF.md). One app for parking anywhere: a universal layer that translates fragmented city/vendor systems into a single, low-stress mobile experience.
 
 > **Status legend:** ✅ implemented · 🟡 partial (demo / stub) · ⚪ planned
 
+## Why this app exists
+
+Street parking in the US is a fragmented mess. Almost every city contracts with a different pay-by-phone vendor (PayByPhone, ParkMobile, Passport, MeterUP, Flowbird, Park Smarter, and dozens of regional one-offs), and each one ships its own app with its own login, its own wallet, its own zone-numbering scheme, and its own quirks. A driver who travels between two cities — or even parks in two neighborhoods of the same city — often ends up with three or four parking apps on their phone and no consistent way to answer the only questions that actually matter:
+
+- **Am I parked legally?** (Right zone, right plate, allowed at this time of day.)
+- **How much is this costing me?** (Hourly rate, total, taxes/fees, and is there a max I'm about to hit?)
+- **When does my session end, and can I extend it?** (Without opening the wrong app and panicking at a meeting.)
+
+PARKER is the universal layer that answers those questions in one place. The product thesis is that the *user experience* of street parking should be decoupled from the *vendor* who runs the meter. The mobile app is intentionally small, fast, and signage-styled for outdoor readability; the backend hides vendor differences behind a normalized domain model and a per-vendor connector, so adding a new city should be a backend-only change that the mobile app never has to know about.
+
+## Goals and non-goals
+
+**Goals**
+
+1. **<10 second session start.** Open app → see nearby zones sorted by GPS distance → tap one → confirm → start. The quote is cached so the Confirm screen never blocks on a network roundtrip.
+2. **Low anxiety while parked.** The Active Session screen is the single source of truth: large countdown, expiration in local time, zone, plate, total paid, and color-coded urgency as the timer drops.
+3. **1–2 tap extension.** Preset +15 / +30 / +60 buttons with live cost preview; a graceful "max time reached" state when the vendor doesn't allow more time.
+4. **One mental model across vendors.** Whether the underlying provider is the seeded mock connector or the (stubbed) Seattle pay-by-phone API, the mobile app sees the same `ParkingZone` / `ParkingSession` / `Receipt` shapes from [`@parking/shared-types`](packages/shared-types/src/index.ts).
+5. **Trust through clarity.** Plain-language copy, explicit confirmation states before any money moves, and WCAG 2.1 AA contrast enforced by an automated audit (`pnpm --dir apps/mobile contrast:check`).
+
+**Explicit non-goals** (per the brief, and worth re-stating so future contributors don't accidentally scope-creep):
+
+- No image/AI interpretation of physical parking signs.
+- No predictive availability ("where will a spot open up").
+- No enforcement forecasting or ticket-dispute flow.
+- No municipal back-office / admin tooling.
+- No space reservation.
+
+If a feature request lands in one of those buckets, it probably belongs in a different product.
+
+## Who this is for
+
+- **Primary user:** a driver parking on city streets — especially one who travels between cities or lives somewhere with inconsistent signage and multiple competing vendor apps.
+- **Secondary users:** business travelers who need clean receipts for expense reports, tourists / occasional drivers who shouldn't have to install a new app per trip, and users with accessibility needs who benefit from a consistent, high-contrast, large-target UI.
+
+The app is **not** built for parking lot operators, enforcement officers, or city staff. Those are different products with different constraints.
+
+## How the pieces fit together
+
+```
+┌────────────────────────┐       ┌──────────────────────────────────────┐
+│  Mobile (Expo / RN)    │       │  API (NestJS)                        │
+│                        │       │                                      │
+│  Expo Router screens   │       │  Auth ── JWT, bcrypt                 │
+│  TanStack Query cache  │  ───▶ │  ParkingSessions ── routes by        │
+│  expo-location + maps  │       │      zone.providerId                 │
+│  expo-notifications    │       │  Providers ── aggregates connectors  │
+│  expo-secure-store     │       │     ├─ MockConnector  (Prisma)       │
+│  Stripe PaymentSheet   │       │     └─ SeattleConnector (HTTP/stub)  │
+│  (or stub wallet)      │       │  Notifications ── 30s scheduler →    │
+│                        │       │      Expo Push (15/5/0 min)          │
+└────────────────────────┘       │  Payments ── Stripe SetupIntent      │
+                                 │  Prisma + Postgres                   │
+                                 └──────────────────────────────────────┘
+```
+
+The contract between the two sides is [`packages/shared-types`](packages/shared-types/src/index.ts). The mobile app never imports anything vendor-specific; the API never returns anything vendor-specific. New cities plug in as new connectors behind that boundary — see [Connector pattern](#connector-pattern) below for the exact extension point.
+
+## Reading order for a future contributor
+
+If you're picking this repo up cold and need to understand it end-to-end, the fastest path is:
+
+1. **[BRIEF.md](context/BRIEF.md)** — the original product brief. Goals, user stories, scope.
+2. **This README's [Requirements Coverage](#requirements-coverage) table** — what's actually built vs. brief, with file links.
+3. **[packages/shared-types/src/index.ts](packages/shared-types/src/index.ts)** — the domain model. If you understand these types you understand the app.
+4. **[apps/api/prisma/schema.prisma](apps/api/prisma/schema.prisma)** — how those types are persisted.
+5. **[apps/api/src/providers/parking-connector.interface.ts](apps/api/src/providers/parking-connector.interface.ts)** — the vendor-abstraction seam. Every new city implements this.
+6. **[apps/mobile/src/hooks/parkingHooks.ts](apps/mobile/src/hooks/parkingHooks.ts)** — where all the mobile data-fetching and cache-invalidation logic lives. The screens are mostly presentation on top of these hooks.
+
 ## Requirements Coverage
 
-### Primary Goals ([brief](BRIEF.md#primary-goals))
+### Primary Goals ([brief](context/BRIEF.md#primary-goals))
 
 | Goal                            | Status | How it's met                                                                                                                                                                |
 | ------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -17,7 +86,7 @@ A mobile-first universal street parking app, built against [BRIEF.md](BRIEF.md).
 | Support any city system         | ✅     | Connector pattern at [parking-connector.interface.ts](apps/api/src/providers/parking-connector.interface.ts) with Mock + Seattle adapters; aggregated on `/providers/zones`. |
 | Build trust through clarity     | ✅     | Plain-language copy, explicit confirmation states, WCAG contrast checks via `pnpm --dir apps/mobile contrast:check`.                                                        |
 
-### MVP Scope ([brief](BRIEF.md#mvp-scope))
+### MVP Scope ([brief](context/BRIEF.md#mvp-scope))
 
 **In scope — all implemented:**
 
@@ -37,7 +106,7 @@ A mobile-first universal street parking app, built against [BRIEF.md](BRIEF.md).
 
 **Explicitly out of scope (per brief):** image-based sign interpretation, predictive availability, enforcement forecasting, municipal back-office tooling, ticket dispute flow, space reservation.
 
-### Core Features ([brief](BRIEF.md#core-features))
+### Core Features ([brief](context/BRIEF.md#core-features))
 
 | Feature                         | Status | Notes                                                                                                                                              |
 | ------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -50,7 +119,7 @@ A mobile-first universal street parking app, built against [BRIEF.md](BRIEF.md).
 | 7. Payments                     | 🟡     | Stripe SetupIntent + Apple/Google Pay via PaymentSheet; stub mode for offline demo; **no charge yet** — real connectors will execute the transaction |
 | 8. History and Receipts         | ✅     | Past sessions with totals; search/filter and export remain ⚪                                                                                       |
 
-### Functional Requirements ([brief](BRIEF.md#functional-requirements))
+### Functional Requirements ([brief](context/BRIEF.md#functional-requirements))
 
 | Area                       | Status | Notes                                                                                                                                                |
 | -------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -60,7 +129,7 @@ A mobile-first universal street parking app, built against [BRIEF.md](BRIEF.md).
 | Error handling             | ✅     | Invalid zone, max-time exceeded, failed payment, GPS denied, network errors — surfaced with plain-language toasts/alerts                              |
 | Offline / low connectivity | 🟡     | Active session cached by TanStack Query; local notifications fire offline. Full offline session-create queue is ⚪.                                   |
 
-### Non-Functional Requirements ([brief](BRIEF.md#non-functional-requirements))
+### Non-Functional Requirements ([brief](context/BRIEF.md#non-functional-requirements))
 
 | Requirement   | Status | How it's met                                                                                                                              |
 | ------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
