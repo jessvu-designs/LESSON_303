@@ -84,6 +84,35 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
     `;
     document.head.appendChild(style);
   }
+
+  // Manually inject @font-face for MaterialCommunityIcons. expo-font's
+  // useFonts() hook is unreliable in the Metro single-output web export
+  // (the @font-face rule never lands in the DOM), so MaterialCommunityIcons
+  // renders as null. require()'ing the .ttf goes through Metro's asset
+  // pipeline and returns the hashed public URL we can drop into CSS.
+  const FONT_STYLE_ID = 'mci-font-face';
+  if (!document.getElementById(FONT_STYLE_ID)) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mciFont = require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf');
+      const url = typeof mciFont === 'string' ? mciFont : mciFont?.default ?? mciFont?.uri;
+      if (url) {
+        const fontStyle = document.createElement('style');
+        fontStyle.id = FONT_STYLE_ID;
+        fontStyle.innerHTML = `
+          @font-face {
+            font-family: 'MaterialCommunityIcons';
+            src: url('${url}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+          }
+        `;
+        document.head.appendChild(fontStyle);
+      }
+    } catch {
+      // require() can throw during SSR/snapshot — safe to skip.
+    }
+  }
 }
 
 function MobileFrame({ children }: { children: React.ReactNode }) {
