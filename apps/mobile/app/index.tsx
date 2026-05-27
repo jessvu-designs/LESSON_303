@@ -134,8 +134,11 @@ export default function Home() {
 
       {active ? (
         <Card style={styles.activeCard}>
+          <Text style={typography.label}>Parking active</Text>
           <View style={styles.activeTopRow}>
-            <Text style={typography.label}>Parking active</Text>
+            <Text style={[typography.display, { color: shouldShowExtendParking ? colors.danger : colors.text }]}>
+              {formatCountdown(new Date(active.expiresAt).getTime() - now)}
+            </Text>
             <View style={styles.activeTopRight}>
               {activeZoneQ.data ? (
                 <Text style={styles.activeZoneCode}>Zone {activeZoneQ.data.code}</Text>
@@ -143,13 +146,10 @@ export default function Home() {
               <Text style={styles.activePaid}>Paid {formatMoney(active.totalPaidCents, active.currency)}</Text>
             </View>
           </View>
-          <Text style={[typography.display, { color: shouldShowExtendParking ? colors.danger : colors.text }]}>
-            {formatCountdown(new Date(active.expiresAt).getTime() - now)}
-          </Text>
           {activeZoneQ.data ? (
             <>
               <Text style={typography.h2}>{activeZoneQ.data.displayName}</Text>
-              {activeZoneQ.data.address ? <Text style={typography.body}>{activeZoneQ.data.address}</Text> : null}
+              {activeZoneQ.data.address ? <Text style={[typography.body, { fontSize: 18 }]}>{activeZoneQ.data.address}</Text> : null}
             </>
           ) : null}
           <Button
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   },
   activeTopRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
   activeTopRight: {
