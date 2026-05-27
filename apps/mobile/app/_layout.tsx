@@ -75,26 +75,10 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       }
       #root {
         display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
         width: 100vw !important;
         height: 100vh !important;
         background: ${BACKDROP_COLOR} !important;
         flex: none !important;
-      }
-      #root > * {
-        width: 100% !important;
-        height: 100% !important;
-        max-width: ${PHONE_MAX_WIDTH}px !important;
-        max-height: ${PHONE_MAX_HEIGHT}px !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        flex: 0 1 auto !important;
-        background: ${colors.bg} !important;
-        overflow: hidden !important;
-        box-shadow: 0 10px 60px rgba(0, 0, 0, 0.7) !important;
-        display: flex !important;
-        flex-direction: column !important;
       }
     `;
     document.head.appendChild(style);
@@ -103,7 +87,36 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 
 function MobileFrame({ children }: { children: React.ReactNode }) {
   if (Platform.OS !== 'web') return <OverlayHost>{children}</OverlayHost>;
-  return <OverlayHost>{children}</OverlayHost>;
+  // Render an explicit centered phone-sized frame via RN-Web (which compiles
+  // to CSS classes). This is more reliable than runtime document.style
+  // injection because it survives bundler tree-shaking and SSR/hydration.
+  return (
+    <View
+      style={{
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        backgroundColor: BACKDROP_COLOR,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <View
+        style={{
+          width: '100%',
+          height: '100%',
+          maxWidth: PHONE_MAX_WIDTH,
+          maxHeight: PHONE_MAX_HEIGHT,
+          backgroundColor: colors.bg,
+          overflow: 'hidden',
+          // @ts-expect-error web-only style
+          boxShadow: '0 10px 60px rgba(0, 0, 0, 0.7)',
+        }}
+      >
+        <OverlayHost>{children}</OverlayHost>
+      </View>
+    </View>
+  );
 }
 
 export default function RootLayout() {
