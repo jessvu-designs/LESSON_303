@@ -129,7 +129,7 @@ export default function WalletScreen() {
               }
               hitSlop={12}
             >
-              <Text style={{ color: colors.warning, fontWeight: '600' }}>Remove</Text>
+              <Text style={{ color: colors.link, fontWeight: '600' }}>Remove</Text>
             </Pressable>
           </Card>
         )}

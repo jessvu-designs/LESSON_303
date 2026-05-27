@@ -83,13 +83,13 @@ export default function VehiclesScreen() {
           <Card style={{ gap: spacing.xs }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View style={{ flex: 1 }}>
+                {item.isDefault ? (
+                  <Text style={typography.label}>Default</Text>
+                ) : null}
                 <Text style={typography.body}>
                   {item.nickname ?? 'Vehicle'} · {item.licensePlate}
                   {item.state ? ` (${item.state})` : ''}
                 </Text>
-                {item.isDefault ? (
-                  <Text style={[typography.bodyMuted, { color: colors.link }]}>Default</Text>
-                ) : null}
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -110,7 +110,7 @@ export default function VehiclesScreen() {
                 }
                 hitSlop={12}
               >
-                <Text style={{ color: colors.warning, fontWeight: '600' }}>Remove</Text>
+                <Text style={{ color: colors.link, fontWeight: '600' }}>Remove</Text>
               </Pressable>
             </View>
             {!item.isDefault ? (
@@ -132,7 +132,7 @@ export default function VehiclesScreen() {
 
       <View style={{ height: spacing.lg }} />
       <Text style={typography.label}>Register vehicle</Text>
-      <View style={styles.form}>
+      <View style={[styles.form, { marginTop: spacing.md }]}>
         <TextInput
           value={plate}
           onChangeText={setPlate}
@@ -176,7 +176,7 @@ export default function VehiclesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg },
-  form: { gap: spacing.sm },
+  form: { gap: spacing.md },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
